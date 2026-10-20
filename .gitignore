@@ -1,0 +1,52 @@
+# Local environment and secrets (keep shareable templates)
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+# Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.tox/
+.nox/
+
+# Coverage and build artifacts
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Runtime databases, uploads and logs
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+uploads/
+logs/
+*.log
+*.pid
+
+# Local editor and OS files
+.DS_Store
+._*
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
