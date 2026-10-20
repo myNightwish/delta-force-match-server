@@ -1,8 +1,9 @@
 import secrets
 from typing import Literal
-from fastapi import APIRouter, Header, HTTPException, Query
+from fastapi import APIRouter, Header, HTTPException, Query, UploadFile, File, Form, Response
 from pydantic import BaseModel, Field, model_validator
 from app.services.pilot import Pilot
+from app.services.pilot_chat import PilotChat, MAX_AUDIO_BYTES
 from app.core.config import settings
 
 router=APIRouter(prefix='/pilot',tags=['matching-pilot'])
@@ -52,6 +53,8 @@ def token(authorization):
 
 def run(fn,*args):
     try: return fn(*args)
+    except PermissionError as e: raise HTTPException(403,str(e))
+    except LookupError as e: raise HTTPException(404,str(e))
     except ValueError as e: raise HTTPException(400,str(e))
 
 @router.get('/config')
@@ -108,3 +111,31 @@ def skip(data: SkipIn, authorization: str|None=Header(default=None)):
 @router.post('/reject')
 def reject(data: RejectIn, authorization: str|None=Header(default=None)):
     return run(service.action,token(authorization),'reject',data.model_dump(exclude={'squad_id'}),data.squad_id)
+
+
+class TextMessageIn(BaseModel):
+    content: str = Field(min_length=1, max_length=2000)
+
+@router.get('/squads/{squad_id}/messages')
+def messages(squad_id: int, after: int=Query(default=0,ge=0), authorization: str|None=Header(default=None)):
+    return run(PilotChat(service).messages,token(authorization),squad_id,after)
+
+@router.post('/squads/{squad_id}/messages')
+def send_message(squad_id: int, data: TextMessageIn, authorization: str|None=Header(default=None)):
+    return run(PilotChat(service).send,token(authorization),squad_id,data.content)
+
+@router.post('/squads/{squad_id}/voice')
+async def send_voice(squad_id: int, file: UploadFile=File(...), duration: float=Form(...), authorization: str|None=Header(default=None)):
+    bearer=token(authorization)
+    # Check room membership before reading or storing media.
+    run(PilotChat(service).messages,bearer,squad_id,0)
+    try:
+        audio=await file.read(MAX_AUDIO_BYTES+1)
+        return run(PilotChat(service).send,bearer,squad_id,'',audio,file.content_type,duration)
+    finally:
+        await file.close()
+
+@router.get('/squads/{squad_id}/voice/{message_id}')
+def get_voice(squad_id: int, message_id: int, authorization: str|None=Header(default=None)):
+    data,mime=run(PilotChat(service).audio,token(authorization),squad_id,message_id)
+    return Response(content=data,media_type=mime,headers={'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'})
