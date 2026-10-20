@@ -1,38 +1,33 @@
 from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from app.api.routers import auth, chat, island, match, ocr, pay, profile, rating
-from app.db.session import init_db
-
+from app.api.routers import pilot
+from app.core.config import settings
+from app.services.pilot import VERSION
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
+    if settings.ENABLE_LEGACY_API:
+        from app.db.session import init_db
+        init_db()
     yield
 
-
-app = FastAPI(title="delta-match", version="0.1.0", lifespan=lifespan)
-
+app = FastAPI(title='river-delta-api', version=VERSION, lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产收紧为前端域名
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=[origin.strip().rstrip('/') for origin in settings.CORS_ORIGINS.split(',') if origin.strip()],
+    allow_credentials=False,
+    allow_methods=['GET', 'POST', 'OPTIONS'],
+    allow_headers=['Authorization', 'Content-Type'],
 )
+app.include_router(pilot.router, prefix='/api')
 
-app.include_router(auth.router, prefix="/api")
-app.include_router(profile.router, prefix="/api")
-app.include_router(ocr.router, prefix="/api")
-app.include_router(pay.router, prefix="/api")
-app.include_router(island.router, prefix="/api")
-app.include_router(match.router, prefix="/api")
-app.include_router(chat.router, prefix="/api")
-app.include_router(rating.router, prefix="/api")
+# The legacy SMS/OCR/payment stubs are not exposed by the public matching service.
+if settings.ENABLE_LEGACY_API:
+    from app.api.routers import auth, chat, island, match, ocr, pay, profile, rating
+    for router in [auth, chat, island, match, ocr, pay, profile, rating]:
+        app.include_router(router.router, prefix='/api')
 
-
-@app.get("/health")
+@app.get('/health')
 def health():
-    return {"ok": True}
+    return {'ok': True, 'version': VERSION}

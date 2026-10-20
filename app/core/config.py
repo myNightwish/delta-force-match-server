@@ -1,3 +1,5 @@
+import os
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -5,6 +7,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     APP_NAME: str = "delta-match"
+    APP_ENV: str = "production" if os.getenv("RENDER") else "development"
+    CORS_ORIGINS: str = "https://river-delta-web.onrender.com,http://127.0.0.1:5188,http://localhost:5188"
+    ENABLE_LEGACY_API: bool = False
+    PILOT_DB: str = "./pilot.db"
+    PILOT_METRICS_TOKEN: str = ""
     DATABASE_URL: str = "sqlite:///./dev.db"
     REDIS_URL: str = "redis://localhost:6379/0"
 
@@ -20,6 +27,9 @@ class Settings(BaseSettings):
 
     # 匹配费用（分）与取消退款比例
     MATCH_FEE_CENTS: int = 100
+    PILOT_EXPERIMENT_MODE: bool = False
+    PILOT_FREE_MODE: bool = True
+    PILOT_FEE_CENTS: int = Field(default=10, ge=0, le=100000)
     REFUND_RATE: float = 0.8
 
     UPLOAD_DIR: str = "./uploads"
