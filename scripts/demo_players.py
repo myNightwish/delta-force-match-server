@@ -5,7 +5,8 @@ import time
 from app.services.pilot import Pilot
 
 BASE = dict(nickname='',game_id='',region='NA',platform='PC',language='中文',map='零号大坝',
-            difficulty='普通',voice='开麦',slot='现在起一小时',goal='任务',budget_min=20,
+            difficulty='普通',voice='开麦',slot='现在起一小时',goal='33任务',task='调查',armor=3,ammo=3,style=3,partner_style=3,
+            confidential_kd=1.5,top_secret_kd=2,combat_score=50,strength_min=0,strength_max=200,budget_min=20,
             budget_max=50,rank=4,skill=3,gap=1,public=True,discovery='browse',is_demo=True)
 
 
@@ -17,12 +18,14 @@ def seed(p):
         real = next((json.loads(r['profile']) for r in rows if not json.loads(r['profile']).get('is_demo')), {})
     # Mirror the latest real plan's basic conditions, so tests are immediately useful.
     base = {**BASE, **{k:real[k] for k in BASE if k in real and k not in ('nickname','game_id','public','discovery','is_demo')}}
+    if real.get('goal') in ('33任务','跑刀','猛攻'):
+        base['style'],base['partner_style'] = real['partner_style'],real['style']
     specs = [
         ('near-a','【测试】北岸·条件相近',{}),
         ('near-b','【测试】零号·条件相近',{}),
-        ('goal','【测试】猎鹰·目标不同',{'goal':'主动交战' if base['goal']!='主动交战' else '任务'}),
-        ('budget','【测试】重装·预算不同',{'budget_min':800,'budget_max':900}),
-        ('skill','【测试】精英·实力差距',{'skill':5 if base['skill']<=3 else 1,'gap':0}),
+        ('goal','【测试】猎鹰·目标不同',{'goal':'猛攻' if base['goal']!='猛攻' else '跑刀'}),
+        ('budget','【测试】重装·装备不同',{'armor':5 if base.get('armor')!=5 else 1,'ammo':5 if base.get('ammo')!=5 else 1}),
+        ('skill','【测试】精英·实力差距',{'confidential_kd':10,'top_secret_kd':10,'combat_score':1000,'strength_min':9000,'strength_max':11000}),
         ('region','【测试】远岸·不同区服',{'region':'EU' if base['region']!='EU' else 'NA'}),
         ('language','【测试】同行·另一语言',{'language':'中文' if base['language']!='中文' else 'English'}),
     ]

@@ -9,30 +9,7 @@ from app.core.config import settings
 router=APIRouter(prefix='/pilot',tags=['matching-pilot'])
 service=Pilot()
 
-class Preferences(BaseModel):
-    nickname: str=Field(min_length=1,max_length=24)
-    game_id: str=Field(min_length=1,max_length=64)
-    region: Literal['NA','EU','SEA','OCE','ME']
-    platform: Literal['PC','Console','Mobile']
-    language: Literal['中文','English','日本語']
-    map: Literal['零号大坝','长弓溪谷','巴克什']
-    difficulty: Literal['简单','普通']
-    voice: Literal['开麦','听指挥与标记']
-    slot: Literal['现在起一小时','今天晚间']
-    goal: Literal['任务','搜集撤离','主动交战']
-    budget_min: int=Field(ge=0,le=1000)
-    budget_max: int=Field(ge=0,le=1000)
-    rank: int=Field(ge=1,le=7)
-    skill: int=Field(ge=1,le=5)
-    gap: int=Field(ge=0,le=4)
-    discovery: Literal["browse", "auto"] = "auto"
-    public: bool = False
-    @model_validator(mode='after')
-    def valid_budget(self):
-        if self.budget_min>self.budget_max: raise ValueError('预算下限不能超过上限')
-        self.nickname=self.nickname.strip(); self.game_id=self.game_id.strip()
-        if not self.nickname or not self.game_id: raise ValueError('昵称和游戏 ID 不能为空')
-        return self
+from app.schemas.pilot_preferences import Preferences
 
 class SquadActionIn(BaseModel):
     squad_id: int | None = Field(default=None, gt=0)

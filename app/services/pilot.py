@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 
 from app.core.config import settings
 
-VERSION = 'two-person-discovery-v2'
+VERSION = 'two-person-recruitment-v3'
 HARD_FIELDS = [('region', '区服'), ('platform', '平台'), ('language', '语言'),
                ('map', '地图'), ('difficulty', '难度'), ('voice', '语音方式'), ('slot', '开局时段')]
 REASONS = {'goal': '目标不同', 'budget': '装备预算不合适', 'skill': '实力预期不符',
@@ -24,6 +24,14 @@ def assessment(a, b):
         {'label': '对方实力在我接受范围内', 'ok': gap <= a['gap']},
         {'label': '我的实力在对方接受范围内', 'ok': gap <= b['gap']},
     ]
+    if a['goal'] in ('33任务','跑刀','猛攻') or b['goal'] in ('33任务','跑刀','猛攻'):
+        checks[2:4] = [{'label':'对方实力符合我的范围','ok': b.get('strength_score') is not None and a.get('strength_min') is not None and a.get('strength_max') is not None and a['strength_min'] <= b['strength_score'] <= a['strength_max']},
+                       {'label':'我的实力符合对方范围','ok': a.get('strength_score') is not None and b.get('strength_min') is not None and b.get('strength_max') is not None and b['strength_min'] <= a['strength_score'] <= b['strength_max']}]
+        checks[1] = {'label': '装备等级一致', 'ok': a['goal'] == b['goal'] and (a['goal'] == '跑刀' or all(a.get(k) is not None and a.get(k) == b.get(k) for k in ('armor','ammo')))}
+        if a['goal'] == b['goal'] == '33任务':
+            checks.append({'label':'任务类型一致','ok': bool(a.get('task')) and a.get('task') == b.get('task')})
+        checks.extend([{'label':'对方打法符合我的期望','ok': a.get('partner_style') is not None and a.get('partner_style') == b.get('style')},
+                       {'label':'我的打法符合对方期望','ok': b.get('partner_style') is not None and b.get('partner_style') == a.get('style')}])
     return {'eligible': not hard and all(c['ok'] for c in checks), 'hard_conflicts': hard,
             'checks': checks, 'skill_gap': gap, 'data_source': '玩家自报，未核验'}
 
@@ -31,6 +39,8 @@ def assessment(a, b):
 def compatible(a, b, arm):
     check = assessment(a, b)
     reasons = list(check['hard_conflicts'])
+    if a['goal'] in ('33任务','跑刀','猛攻') or b['goal'] in ('33任务','跑刀','猛攻'):
+        return reasons + [c['label'] + '不满足' for c in check['checks'] if not c['ok']]
     if arm != 'A':
         if a['goal'] != b['goal']:
             reasons.append('本局目标不同')
@@ -179,7 +189,7 @@ class Pilot:
         candidates = [c for c in candidates if json.loads(c['profile']).get('discovery', 'auto') == 'auto'
                       and not self._blocked(db, ticket['token'], c['token'])
                       and not compatible(profile, json.loads(c['profile']), ticket['arm'] if self.config()['experiment_enabled'] else 'B')]
-        candidates.sort(key=lambda c: (abs(profile['rank'] - json.loads(c['profile'])['rank']), c['created'], c['id']))
+        candidates.sort(key=lambda c: (abs(profile.get('strength_score',profile['rank']) - json.loads(c['profile']).get('strength_score',json.loads(c['profile'])['rank'])), c['created'], c['id']))
         if candidates:
             self._reserve(db, ticket, candidates[0], 'auto')
 
@@ -227,6 +237,11 @@ class Pilot:
             return self._state(db, token)
 
     def join(self, token, profile):
+        if profile.get('goal') in ('33任务','跑刀','猛攻'):
+            from app.schemas.pilot_preferences import Preferences
+            demo_metadata = {k: profile[k] for k in ('is_demo','demo_key') if k in profile}
+            profile = {**Preferences.model_validate(profile).model_dump(), **demo_metadata}
+            profile['strength_score'] = round((profile['confidential_kd'] * .4 + profile['top_secret_kd'] * .6) * profile['combat_score'], 2)
         profile = {**profile, 'rules_version': VERSION, 'matching_mode': 'experiment' if self.config()['experiment_enabled'] else 'shared'}
         with self.db() as db:
             p = self.participant(db, token)
@@ -261,7 +276,7 @@ class Pilot:
                                'created': row['created'], 'can_invite': bool(mine and mine['status'] == 'waiting' and check['eligible'])})
             if profile:
                 result.sort(key=lambda c: (bool(c['profile'].get('is_demo')), not c['assessment']['eligible'],
-                    abs(profile['rank'] - c['profile']['rank']), c['created'], c['id']))
+                    abs(profile.get('strength_score',profile['rank']) - c['profile'].get('strength_score',c['profile']['rank'])), c['created'], c['id']))
             else:
                 result.sort(key=lambda c:(bool(c['profile'].get('is_demo')), c['created'],c['id']))
             return {'items': result[page*6:page*6+6], 'total': len(result), 'page': page,
