@@ -16,6 +16,9 @@ class PilotChat:
             kind TEXT NOT NULL, content TEXT NOT NULL DEFAULT '', audio BLOB,
             mime TEXT, duration REAL, created TEXT NOT NULL)""")
         db.execute('CREATE INDEX IF NOT EXISTS pilot_message_room ON pilot_messages(squad_id,id)')
+        # Persist the high-water mark before retention deletes any rows, including on old databases
+        db.execute('CREATE TABLE IF NOT EXISTS pilot_message_sequence(singleton INTEGER PRIMARY KEY CHECK(singleton=1), last_id INTEGER NOT NULL)')
+        db.execute('INSERT INTO pilot_message_sequence(singleton,last_id) SELECT 1,COALESCE(MAX(id),0) FROM pilot_messages WHERE 1 ON CONFLICT(singleton) DO UPDATE SET last_id=MAX(last_id,excluded.last_id)')
 
     def _authorize(self, db, token, squad_id):
         self.pilot.participant(db, token)
@@ -77,8 +80,10 @@ class PilotChat:
                 count = db.execute("SELECT COUNT(*) FROM pilot_messages WHERE squad_id=? AND kind='voice'", (squad_id,)).fetchone()[0]
                 if count >= 100:
                     raise ValueError('本队语音空间已满，请使用文字')
-            cur = db.execute('INSERT INTO pilot_messages(squad_id,sender_ticket,kind,content,audio,mime,duration,created) VALUES(?,?,?,?,?,?,?,?)',
-                             (squad_id, member['id'], 'voice' if audio is not None else 'text', text if audio is None else '', audio, mime, duration, self.pilot.now()))
+            next_id = db.execute('SELECT last_id+1 FROM pilot_message_sequence WHERE singleton=1').fetchone()[0]
+            db.execute('UPDATE pilot_message_sequence SET last_id=? WHERE singleton=1', (next_id,))
+            cur = db.execute('INSERT INTO pilot_messages(id,squad_id,sender_ticket,kind,content,audio,mime,duration,created) VALUES(?,?,?,?,?,?,?,?,?)',
+                             (next_id, squad_id, member['id'], 'voice' if audio is not None else 'text', text if audio is None else '', audio, mime, duration, self.pilot.now()))
             row = db.execute('SELECT * FROM pilot_messages WHERE id=?', (cur.lastrowid,)).fetchone()
             return self._out(row, member['id'])
 

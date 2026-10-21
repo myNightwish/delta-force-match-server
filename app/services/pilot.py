@@ -9,6 +9,11 @@ from datetime import datetime, timezone, timedelta
 from app.core.config import settings
 
 VERSION = 'two-person-recruitment-v4'
+PRESENCE_SECONDS = 75
+
+class InvalidIdentityError(ValueError):
+    pass
+
 HARD_FIELDS = [('region', '区服'), ('platform', '平台'), ('language', '语言'),
                ('map', '地图'), ('difficulty', '难度'), ('voice', '语音方式'), ('slot', '开局时段')]
 REASONS = {'goal': '目标不同', 'budget': '装备预算不合适', 'skill': '实力预期不符',
@@ -73,6 +78,9 @@ class Pilot:
                 CREATE INDEX IF NOT EXISTS pilot_squad_a ON squads(a);
                 CREATE INDEX IF NOT EXISTS pilot_squad_b ON squads(b);
             ''')
+            participant_columns = {r['name'] for r in db.execute('PRAGMA table_info(participants)')}
+            if 'last_seen' not in participant_columns:
+                db.execute('ALTER TABLE participants ADD COLUMN last_seen TEXT')
             columns = {r['name'] for r in db.execute('PRAGMA table_info(squads)')}
             if 'deadline' not in columns:
                 db.execute('ALTER TABLE squads ADD COLUMN deadline TEXT')
@@ -113,14 +121,23 @@ class Pilot:
                 arm = 'B' if last == 'A' else 'A'
             else:
                 arm = secrets.choice(['A', 'B'])
-            db.execute('INSERT INTO participants VALUES(?,?,?)', (token, arm, self.now()))
+            db.execute('INSERT INTO participants(token,arm,created,last_seen) VALUES(?,?,?,?)', (token, arm, self.now(), self.now()))
         return {'token': token}
 
-    def participant(self, db, token):
+    def participant(self, db, token, touch=False):
         p = db.execute('SELECT * FROM participants WHERE token=?', (token,)).fetchone()
         if not p:
-            raise ValueError('体验身份无效，请重新进入')
+            raise InvalidIdentityError('体验身份已失效')
+        if touch:
+            db.execute('UPDATE participants SET last_seen=? WHERE token=?', (self.now(), token))
         return p
+
+    @staticmethod
+    def presence_cutoff():
+        return (datetime.now(timezone.utc) - timedelta(seconds=PRESENCE_SECONDS)).isoformat()
+
+    def online(self, db, token):
+        return db.execute('SELECT 1 FROM participants WHERE token=? AND last_seen>?', (token, self.presence_cutoff())).fetchone() is not None
 
     def _latest(self, db, token):
         return db.execute('SELECT * FROM tickets WHERE token=? ORDER BY id DESC LIMIT 1', (token,)).fetchone()
@@ -168,6 +185,8 @@ class Pilot:
             raise ValueError('不能与自己组队')
         if self._blocked(db, a['token'], b['token']):
             raise ValueError('近期已跳过该候选，请选择其他玩家')
+        if not self.online(db, a['token']) or not self.online(db, b['token']):
+            raise ValueError('该玩家暂时不在线，请刷新候选')
         pa, pb = json.loads(a['profile']), json.loads(b['profile'])
         strategy = a['arm'] if source == 'auto' and self.config()['experiment_enabled'] else 'B'
         conflicts = compatible(pa, pb, strategy)
@@ -199,6 +218,7 @@ class Pilot:
             candidates = db.execute("SELECT * FROM tickets WHERE status='waiting' AND token<>? ORDER BY created,id",
                                     (ticket['token'],)).fetchall()
         candidates = [c for c in candidates if json.loads(c['profile']).get('discovery', 'auto') == 'auto'
+                      and self.online(db, c['token'])
                       and not self._blocked(db, ticket['token'], c['token'])
                       and not compatible(profile, json.loads(c['profile']), ticket['arm'] if self.config()['experiment_enabled'] else 'B')]
         candidates.sort(key=lambda c: (abs(profile.get('strength_score',profile['rank']) - json.loads(c['profile']).get('strength_score',json.loads(c['profile'])['rank'])), c['created'], c['id']))
@@ -207,7 +227,7 @@ class Pilot:
 
     def _state(self, db, token, auto=True):
         self._expire(db)
-        p = self.participant(db, token)
+        p = self.participant(db, token, touch=True)
         ticket = self._latest(db, token)
         if ticket and auto:
             self._auto(db, ticket)
@@ -262,7 +282,7 @@ class Pilot:
             profile['strength_score'] = round((profile['confidential_kd'] * .4 + profile['top_secret_kd'] * .6) * profile['combat_score'], 2)
         profile = {**profile, 'rules_version': VERSION, 'matching_mode': 'experiment' if self.config()['experiment_enabled'] else 'shared'}
         with self.db() as db:
-            p = self.participant(db, token)
+            p = self.participant(db, token, touch=True)
             self._expire(db)
             if db.execute("SELECT id FROM tickets WHERE token=? AND status IN ('waiting','matched')", (token,)).fetchone():
                 raise ValueError('已有进行中的组局，请先完成或取消')
@@ -273,7 +293,7 @@ class Pilot:
 
     def candidates(self, token, recommended=True, page=0, query=""):
         with self.db() as db:
-            self.participant(db, token)
+            self.participant(db, token, touch=True)
             self._expire(db)
             mine = self._latest(db, token)
             profile = json.loads(mine['profile']) if mine else None
@@ -281,7 +301,7 @@ class Pilot:
             result = []
             for row in rows:
                 other = json.loads(row['profile'])
-                if not other.get('public', False) or self._blocked(db, token, row['token']):
+                if not other.get('public', False) or not self.online(db, row['token']) or self._blocked(db, token, row['token']):
                     continue
                 if query.strip() and query.strip().casefold() not in other.get('nickname','').casefold():
                     continue
@@ -302,7 +322,7 @@ class Pilot:
 
     def invite(self, token, candidate_id):
         with self.db() as db:
-            self.participant(db, token)
+            self.participant(db, token, touch=True)
             self._expire(db)
             mine = self._latest(db, token)
             other = db.execute('SELECT * FROM tickets WHERE id=?', (candidate_id,)).fetchone()
@@ -315,7 +335,7 @@ class Pilot:
 
     def skip(self, token, candidate_ids):
         with self.db() as db:
-            self.participant(db, token)
+            self.participant(db, token, touch=True)
             self._expire(db)
             mine = self._latest(db, token)
             if not mine or mine['status'] != 'waiting':
@@ -381,6 +401,23 @@ class Pilot:
                 else:
                     raise ValueError('未知操作')
             return self._state(db, token, auto=False)
+
+    def recent_squads(self, token, before=None):
+        with self.db() as db:
+            self.participant(db, token)
+            rows = db.execute("""SELECT s.*,ta.token AS owner_a,ta.profile AS profile_a,tb.profile AS profile_b
+                FROM squads s JOIN tickets ta ON ta.id=s.a JOIN tickets tb ON tb.id=s.b
+                WHERE (ta.token=? OR tb.token=?) AND s.status IN ('ready','done') AND (? IS NULL OR s.id<?)
+                ORDER BY s.id DESC LIMIT 11""", (token,token,before,before)).fetchall()
+            items=[]
+            for row in rows[:10]:
+                mine=json.loads(row['profile_a'] if row['owner_a']==token else row['profile_b'])
+                peer=json.loads(row['profile_b'] if row['owner_a']==token else row['profile_a'])
+                agreement=json.loads(row['agreement_json']) if row['agreement_json'] else mine
+                items.append({'id':row['id'],'status':row['status'],'created':row['created'],
+                              'peer_nickname':peer['nickname'],'goal':agreement.get('goal',''),
+                              'map':agreement.get('map',''),'difficulty':agreement.get('difficulty','')})
+            return {'items':items,'next_before':items[-1]['id'] if len(rows)>10 else None}
 
     def metrics(self):
         with self.db() as db:

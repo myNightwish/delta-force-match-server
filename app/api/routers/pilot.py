@@ -2,10 +2,11 @@ import secrets
 from typing import Literal
 from fastapi import Request, APIRouter, Header, HTTPException, Query, UploadFile, File, Form, Response
 from pydantic import BaseModel, Field, model_validator
-from app.services.pilot import Pilot
+from app.services.pilot import Pilot, InvalidIdentityError
 from app.services.pilot_chat import PilotChat, MAX_AUDIO_BYTES
 from app.core.config import settings
 from app.services.phone_auth import PhoneAuth, PhoneError
+from app.services.pilot_limits import PilotLimits, RateLimitError
 
 router=APIRouter(prefix='/pilot',tags=['matching-pilot'])
 service=Pilot()
@@ -33,22 +34,32 @@ def token(authorization):
 
 def run(fn,*args):
     try: return fn(*args)
+    except RateLimitError as e: raise HTTPException(429, {'code':'rate_limited','message':str(e)}, headers={'Retry-After':str(e.retry_after)})
+    except InvalidIdentityError as e: raise HTTPException(401, {'code':'anonymous_identity_invalid','message':str(e)})
     except PhoneError as e: raise HTTPException(e.status,str(e))
     except PermissionError as e: raise HTTPException(403,str(e))
     except LookupError as e: raise HTTPException(404,str(e))
     except ValueError as e: raise HTTPException(400,str(e))
 
+def guard(request, action, owner=None):
+    # Use the ASGI client address; never trust arbitrary forwarded headers here
+    run(PilotLimits(service).check,action,request.client.host if request.client else 'unknown',owner)
+
 @router.get('/config')
 def config(): return service.config()
 
 @router.post('/participants')
-def register(): return service.register()
+def register(request:Request):
+    guard(request,'register')
+    return service.register()
 
 @router.get('/state')
 def state(authorization: str|None=Header(default=None)): return run(service.state,token(authorization))
 
 @router.post('/join')
-def join(data: RecruitmentV4 | Preferences,authorization: str|None=Header(default=None)): return run(service.join,token(authorization),data.model_dump())
+def join(data: RecruitmentV4 | Preferences,request:Request,authorization: str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'join',owner)
+    return run(service.join,owner,data.model_dump())
 
 @router.post('/confirm')
 def confirm(data: SquadActionIn | None=None, authorization: str|None=Header(default=None)): return run(service.action,token(authorization),'confirm',None,data.squad_id if data else None)
@@ -82,16 +93,24 @@ def candidates(recommended: bool=True, page: int=Query(default=0,ge=0,le=1000), 
     return run(service.candidates,token(authorization),recommended,page,query)
 
 @router.post('/invite')
-def invite(data: CandidateIn, authorization: str|None=Header(default=None)):
-    return run(service.invite,token(authorization),data.candidate_id)
+def invite(data: CandidateIn, request:Request, authorization: str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'invite',owner)
+    return run(service.invite,owner,data.candidate_id)
 
 @router.post('/skip')
-def skip(data: SkipIn, authorization: str|None=Header(default=None)):
-    return run(service.skip,token(authorization),data.candidate_ids)
+def skip(data: SkipIn, request:Request, authorization: str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'skip',owner)
+    return run(service.skip,owner,data.candidate_ids)
 
 @router.post('/reject')
-def reject(data: RejectIn, authorization: str|None=Header(default=None)):
-    return run(service.action,token(authorization),'reject',data.model_dump(exclude={'squad_id'}),data.squad_id)
+def reject(data: RejectIn, request:Request, authorization: str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'reject',owner)
+    return run(service.action,owner,'reject',data.model_dump(exclude={'squad_id'}),data.squad_id)
+
+
+@router.get('/squads/recent')
+def recent_squads(before:int|None=Query(default=None,gt=0), authorization:str|None=Header(default=None)):
+    return run(service.recent_squads,token(authorization),before)
 
 
 class TextMessageIn(BaseModel):
