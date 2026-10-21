@@ -86,6 +86,7 @@ class Pilot:
                 db.execute('ALTER TABLE squads ADD COLUMN deadline TEXT')
             if 'agreement_json' not in columns:
                 db.execute('ALTER TABLE squads ADD COLUMN agreement_json TEXT')
+            db.execute('CREATE TABLE IF NOT EXISTS pilot_test_people(owner TEXT PRIMARY KEY)')
             # Keep historical records; old unconfirmed reservations also receive a deadline.
             db.execute("UPDATE squads SET deadline=created WHERE status='proposed' AND deadline IS NULL")
 
@@ -283,6 +284,9 @@ class Pilot:
         profile = {**profile, 'rules_version': VERSION, 'matching_mode': 'experiment' if self.config()['experiment_enabled'] else 'shared'}
         with self.db() as db:
             p = self.participant(db, token, touch=True)
+            if db.execute('SELECT 1 FROM pilot_test_people WHERE owner=?',(token,)).fetchone():
+                profile['is_demo']=True
+                profile['nickname']='【测试】'+profile['nickname'].removeprefix('【测试】')[:20]
             self._expire(db)
             if db.execute("SELECT id FROM tickets WHERE token=? AND status IN ('waiting','matched')", (token,)).fetchone():
                 raise ValueError('已有进行中的组局，请先完成或取消')

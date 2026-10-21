@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     ENABLE_LEGACY_API: bool = False
     PILOT_DB: str = "./pilot.db"
     PILOT_METRICS_TOKEN: str = ""
+    PILOT_TEST_ACCESS_CODE: str = ""
     DATABASE_URL: str = "sqlite:///./dev.db"
     REDIS_URL: str = "redis://localhost:6379/0"
 

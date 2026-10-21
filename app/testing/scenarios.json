@@ -1,0 +1,706 @@
+[
+  {
+    "id": "compatible",
+    "title": "双向兼容",
+    "expected": "应可以申请并组队，实力、打法与装备不同，但双方要求均满足",
+    "players": [
+      {
+        "schema_version": 4,
+        "nickname": "【测试】兼容A",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 2,
+        "partner_style_min": 4,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "custom",
+        "discovery": "browse",
+        "public": true,
+        "strength_min": 90,
+        "strength_max": 130
+      },
+      {
+        "schema_version": 4,
+        "nickname": "【测试】兼容B",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 3,
+        "armor": 3,
+        "ammo": 3,
+        "style": 4,
+        "partner_style_min": 1,
+        "partner_style_max": 3,
+        "partner_helmet_min": 3,
+        "partner_armor_min": 3,
+        "partner_ammo_min": 3,
+        "score_mode": "manual",
+        "manual_score": 115,
+        "strength_range_mode": "custom",
+        "discovery": "browse",
+        "public": true,
+        "strength_min": 90,
+        "strength_max": 120
+      }
+    ]
+  },
+  {
+    "id": "skill",
+    "title": "实力差距",
+    "expected": "应互相可见，但不能申请，实力超出接受范围",
+    "players": [
+      {
+        "schema_version": 4,
+        "nickname": "【测试】实力A",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      },
+      {
+        "schema_version": 4,
+        "nickname": "【测试】实力B",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 200,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      }
+    ]
+  },
+  {
+    "id": "reverse-style",
+    "title": "单向打法不符",
+    "expected": "A 接受 B，B 不接受 A，应拦截组队",
+    "players": [
+      {
+        "schema_version": 4,
+        "nickname": "【测试】打法A",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 2,
+        "partner_style_min": 4,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      },
+      {
+        "schema_version": 4,
+        "nickname": "【测试】打法B",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 4,
+        "partner_style_min": 3,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      }
+    ]
+  },
+  {
+    "id": "goal",
+    "title": "合作目的不同",
+    "expected": "应互相可见，但因目标不同不能组队",
+    "players": [
+      {
+        "schema_version": 4,
+        "nickname": "【测试】目标A",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      },
+      {
+        "schema_version": 4,
+        "nickname": "【测试】目标B",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "猛攻",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      }
+    ]
+  },
+  {
+    "id": "map",
+    "title": "地图难度不符",
+    "expected": "同一地图但难度不同，应拦截组队",
+    "players": [
+      {
+        "schema_version": 4,
+        "nickname": "【测试】战场A",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      },
+      {
+        "schema_version": 4,
+        "nickname": "【测试】战场B",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "机密"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      }
+    ]
+  },
+  {
+    "id": "task",
+    "title": "共同任务与地图",
+    "expected": "应匹配到巴克什绝密，共同任务为击杀干员",
+    "players": [
+      {
+        "schema_version": 4,
+        "nickname": "【测试】任务A",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "33任务",
+        "tasks": [
+          "调查",
+          "击杀干员"
+        ],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          },
+          {
+            "map": "巴克什",
+            "difficulty": "绝密"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      },
+      {
+        "schema_version": 4,
+        "nickname": "【测试】任务B",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "33任务",
+        "tasks": [
+          "放置",
+          "击杀干员"
+        ],
+        "maps": [
+          {
+            "map": "巴克什",
+            "difficulty": "绝密"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      }
+    ]
+  },
+  {
+    "id": "gear",
+    "title": "单向装备门槛",
+    "expected": "B 的装备未达到 A 的门槛，应拦截组队",
+    "players": [
+      {
+        "schema_version": 4,
+        "nickname": "【测试】装备A",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 4,
+        "partner_armor_min": 4,
+        "partner_ammo_min": 4,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      },
+      {
+        "schema_version": 4,
+        "nickname": "【测试】装备B",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 3,
+        "armor": 3,
+        "ammo": 3,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      }
+    ]
+  },
+  {
+    "id": "knife",
+    "title": "跑刀忽略装备",
+    "expected": "应允许组队，装备字段不会参与跑刀匹配",
+    "players": [
+      {
+        "schema_version": 4,
+        "nickname": "【测试】跑刀A",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "卡战备跑刀",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      },
+      {
+        "schema_version": 4,
+        "nickname": "【测试】跑刀B",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "卡战备跑刀",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": null,
+        "armor": null,
+        "ammo": null,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": null,
+        "partner_armor_min": null,
+        "partner_ammo_min": null,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "browse",
+        "public": true
+      }
+    ]
+  },
+  {
+    "id": "auto",
+    "title": "公开自动匹配",
+    "expected": "双方发布后应自动生成同一个待确认队伍",
+    "players": [
+      {
+        "schema_version": 4,
+        "nickname": "【测试】自动A",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "auto",
+        "public": true
+      },
+      {
+        "schema_version": 4,
+        "nickname": "【测试】自动B",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 110,
+        "strength_range_mode": "auto",
+        "discovery": "auto",
+        "public": true
+      }
+    ]
+  },
+  {
+    "id": "private-auto",
+    "title": "私密自动匹配",
+    "expected": "大厅不可见，双方发布后仍应自动匹配",
+    "players": [
+      {
+        "schema_version": 4,
+        "nickname": "【测试】私密A",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "auto",
+        "public": false
+      },
+      {
+        "schema_version": 4,
+        "nickname": "【测试】私密B",
+        "region": "NA",
+        "platform": "PC",
+        "language": "中文",
+        "voice": "开麦",
+        "slot": "现在起一小时",
+        "goal": "搜打撤",
+        "tasks": [],
+        "maps": [
+          {
+            "map": "零号大坝",
+            "difficulty": "普通"
+          }
+        ],
+        "helmet": 4,
+        "armor": 4,
+        "ammo": 4,
+        "style": 3,
+        "partner_style_min": 1,
+        "partner_style_max": 5,
+        "partner_helmet_min": 2,
+        "partner_armor_min": 2,
+        "partner_ammo_min": 2,
+        "score_mode": "manual",
+        "manual_score": 100,
+        "strength_range_mode": "auto",
+        "discovery": "auto",
+        "public": false
+      }
+    ]
+  }
+]

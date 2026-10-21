@@ -175,3 +175,32 @@ def phone_profile(data:PhoneProfileIn, authorization:str|None=Header(default=Non
 @router.post('/auth/logout')
 def phone_logout(authorization:str|None=Header(default=None)):
     return run(PhoneAuth(service).logout,raw_credential(authorization))
+
+
+# Test tooling is disabled unless a strong server-side access code is configured
+from app.services.testing_tools import TestingTools
+class TestUnlockIn(BaseModel):
+    code:str=Field(min_length=1,max_length=128)
+class TestAccessIn(BaseModel):
+    access_token:str=Field(min_length=20,max_length=128)
+class TestImportIn(TestAccessIn):
+    profile:dict
+    new_identity:bool=False
+
+@router.post('/testing/unlock')
+def testing_unlock(data:TestUnlockIn,request:Request,authorization:str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'test_unlock',owner)
+    return run(TestingTools(service).unlock,owner,data.code)
+
+@router.post('/testing/scenarios')
+def testing_scenarios(data:TestAccessIn,authorization:str|None=Header(default=None)):
+    return run(TestingTools(service).scenarios,token(authorization),data.access_token)
+
+@router.post('/testing/import')
+def testing_import(data:TestImportIn,request:Request,authorization:str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'test_import',owner)
+    return run(TestingTools(service).import_profile,owner,data.access_token,data.profile,data.new_identity)
+
+@router.post('/testing/lock')
+def testing_lock(data:TestAccessIn,authorization:str|None=Header(default=None)):
+    return run(TestingTools(service).lock,token(authorization),data.access_token)
