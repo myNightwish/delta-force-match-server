@@ -2,6 +2,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 class Preferences(BaseModel):
+    schema_version: Literal[3] = 3
     nickname: str=Field(min_length=1,max_length=24)
     game_id: str=Field(default='',max_length=64)
     region: Literal['NA','EU','SEA','OCE','ME']

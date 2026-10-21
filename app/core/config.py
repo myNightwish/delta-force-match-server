@@ -25,6 +25,14 @@ class Settings(BaseSettings):
     SMS_CODE_TTL_SECONDS: int = 300
     SMS_RESEND_INTERVAL_SECONDS: int = 60
 
+    # Optional pilot phone login. Separate from the disabled legacy development SMS API.
+    PHONE_AUTH_ENABLED: bool = False
+    PHONE_AUTH_PROVIDER: str = "twilio_verify"
+    PHONE_AUTH_SECRET: str = ""
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_VERIFY_SERVICE_SID: str = ""
+
     # 匹配费用（分）与取消退款比例
     MATCH_FEE_CENTS: int = 100
     PILOT_EXPERIMENT_MODE: bool = False

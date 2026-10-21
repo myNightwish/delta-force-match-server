@@ -1,13 +1,14 @@
 """Local-only test peers. Run --serve to keep recruitment alive and confirm demo peers."""
 import argparse
+import copy
 import json
 import time
 from app.services.pilot import Pilot
 
-BASE = dict(nickname='',game_id='',region='NA',platform='PC',language='中文',map='零号大坝',
-            difficulty='普通',voice='开麦',slot='现在起一小时',goal='33任务',task='调查',armor=3,ammo=3,style=3,partner_style=3,
-            confidential_kd=1.5,top_secret_kd=2,combat_score=50,strength_min=0,strength_max=200,budget_min=20,
-            budget_max=50,rank=4,skill=3,gap=1,public=True,discovery='browse',is_demo=True)
+BASE = dict(schema_version=4,nickname='',region='NA',platform='PC',language='中文',voice='开麦',slot='现在起一小时',
+            goal='搜打撤',tasks=[],maps=[{'map':'零号大坝','difficulty':'普通'}],helmet=4,armor=4,ammo=4,style=3,
+            partner_style_min=1,partner_style_max=5,partner_helmet_min=2,partner_armor_min=2,partner_ammo_min=2,
+            score_mode='manual',manual_score=100,strength_range_mode='auto',public=True,discovery='browse',is_demo=True)
 
 
 def seed(p):
@@ -16,16 +17,16 @@ def seed(p):
         existing = {json.loads(r['profile']).get('demo_key'):r['token'] for r in reversed(rows)
                     if json.loads(r['profile']).get('is_demo')}
         real = next((json.loads(r['profile']) for r in rows if not json.loads(r['profile']).get('is_demo')), {})
-    # Mirror the latest real plan's basic conditions, so tests are immediately useful.
-    base = {**BASE, **{k:real[k] for k in BASE if k in real and k not in ('nickname','game_id','public','discovery','is_demo')}}
-    if real.get('goal') in ('33任务','跑刀','猛攻'):
-        base['style'],base['partner_style'] = real['partner_style'],real['style']
+    base=copy.deepcopy(BASE)
+    if real.get('schema_version')==4:
+        base.update({k:copy.deepcopy(real[k]) for k in BASE if k in real and k not in ('nickname','public','discovery','is_demo')})
+        base.update(score_mode='manual',manual_score=real['strength_score'],strength_range_mode='auto',style=real['partner_style_min'],partner_style_min=real['style'],partner_style_max=real['style'])
     specs = [
         ('near-a','【测试】北岸·条件相近',{}),
         ('near-b','【测试】零号·条件相近',{}),
-        ('goal','【测试】猎鹰·目标不同',{'goal':'猛攻' if base['goal']!='猛攻' else '跑刀'}),
-        ('budget','【测试】重装·装备不同',{'armor':5 if base.get('armor')!=5 else 1,'ammo':5 if base.get('ammo')!=5 else 1}),
-        ('skill','【测试】精英·实力差距',{'confidential_kd':10,'top_secret_kd':10,'combat_score':1000,'strength_min':9000,'strength_max':11000}),
+        ('goal','【测试】猎鹰·目标不同',{'goal':'猛攻' if base['goal']!='猛攻' else '搜打撤'}),
+        ('budget','【测试】重装·高配玩家',{'helmet':6,'armor':6,'ammo':6,'partner_helmet_min':6,'partner_armor_min':6,'partner_ammo_min':6}),
+        ('skill','【测试】精英·实力差距',{'score_mode':'manual','manual_score':10000 if base['manual_score']<1000 else 1}),
         ('region','【测试】远岸·不同区服',{'region':'EU' if base['region']!='EU' else 'NA'}),
         ('language','【测试】同行·另一语言',{'language':'中文' if base['language']!='中文' else 'English'}),
     ]
@@ -33,10 +34,17 @@ def seed(p):
     for key,name,patch in specs:
         token=existing.get(key) or p.register()['token']
         state=p.state(token)
+        if state['ticket'] and state['ticket']['status']=='waiting' and state['ticket']['profile'].get('schema_version')!=4:
+            state=p.action(token,'cancel')
         if not state['ticket'] or state['ticket']['status'] not in ('waiting','matched'):
-            p.join(token,{**base,**patch,'nickname':name,'game_id':'DEMO-NOT-REAL-'+key,'is_demo':True,'demo_key':key})
+            plan={**copy.deepcopy(base),**patch,'nickname':name,'is_demo':True,'demo_key':key}
+            if plan['goal']!='卡战备跑刀':
+                for gear in ('helmet','armor','ammo'):
+                    plan[gear]=plan.get(gear) or 4
+                    plan['partner_'+gear+'_min']=min(plan.get('partner_'+gear+'_min') or 2,plan[gear])
+            p.join(token,plan)
         peers.append(token)
-    print(f'已准备 {len(peers)} 位【测试】玩家；基本条件：{base["region"]} / {base["platform"]} / {base["language"]} / {base["map"]} / {base["difficulty"]}。',flush=True)
+    print(f'已准备 {len(peers)} 位【测试】玩家；基本条件：{base["region"]} / {base["platform"]} / {base["language"]} / {base["maps"][0]["map"]} / {base["maps"][0]["difficulty"]}。',flush=True)
     return peers
 
 

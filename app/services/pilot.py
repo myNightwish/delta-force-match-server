@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 
 from app.core.config import settings
 
-VERSION = 'two-person-recruitment-v3'
+VERSION = 'two-person-recruitment-v4'
 HARD_FIELDS = [('region', '区服'), ('platform', '平台'), ('language', '语言'),
                ('map', '地图'), ('difficulty', '难度'), ('voice', '语音方式'), ('slot', '开局时段')]
 REASONS = {'goal': '目标不同', 'budget': '装备预算不合适', 'skill': '实力预期不符',
@@ -16,6 +16,11 @@ REASONS = {'goal': '目标不同', 'budget': '装备预算不合适', 'skill': '
 
 
 def assessment(a, b):
+    if a.get('schema_version') == 4 or b.get('schema_version') == 4:
+        if a.get('schema_version') != b.get('schema_version'):
+            return {'eligible':False,'hard_conflicts':['招募条件版本不同，请更新本局条件'],'checks':[],'skill_gap':None}
+        from app.services.recruitment_rules import assessment_v4
+        return assessment_v4(a,b)
     hard = [label + '不一致' for field, label in HARD_FIELDS if a[field] != b[field]]
     gap = abs(a['skill'] - b['skill'])
     checks = [
@@ -39,6 +44,8 @@ def assessment(a, b):
 def compatible(a, b, arm):
     check = assessment(a, b)
     reasons = list(check['hard_conflicts'])
+    if a.get('schema_version') == 4 or b.get('schema_version') == 4:
+        return reasons + [c['label']+'不满足' for c in check['checks'] if not c['ok']]
     if a['goal'] in ('33任务','跑刀','猛攻') or b['goal'] in ('33任务','跑刀','猛攻'):
         return reasons + [c['label'] + '不满足' for c in check['checks'] if not c['ok']]
     if arm != 'A':
@@ -69,6 +76,8 @@ class Pilot:
             columns = {r['name'] for r in db.execute('PRAGMA table_info(squads)')}
             if 'deadline' not in columns:
                 db.execute('ALTER TABLE squads ADD COLUMN deadline TEXT')
+            if 'agreement_json' not in columns:
+                db.execute('ALTER TABLE squads ADD COLUMN agreement_json TEXT')
             # Keep historical records; old unconfirmed reservations also receive a deadline.
             db.execute("UPDATE squads SET deadline=created WHERE status='proposed' AND deadline IS NULL")
 
@@ -170,6 +179,9 @@ class Pilot:
         arm = (a['arm'] if self.config()['experiment_enabled'] else 'auto') if source == 'auto' else 'manual'
         cur = db.execute("INSERT INTO squads(arm,a,b,status,confirms,feedback,fee_cents,created,version,deadline) VALUES(?,?,?,'proposed','[]','{}',?,?,?,?)",
                          (arm, a['id'], b['id'], 0 if self.config()['free_pilot'] else self.config()['fee_cents'], self.now(), VERSION, deadline))
+        if pa.get('schema_version') == pb.get('schema_version') == 4:
+            from app.services.recruitment_rules import agreement_v4
+            db.execute('UPDATE squads SET agreement_json=? WHERE id=?',(json.dumps(agreement_v4(pa,pb),ensure_ascii=False),cur.lastrowid))
         db.execute("UPDATE tickets SET status='matched' WHERE id IN (?,?)", (a['id'], b['id']))
         for t in (a, b):
             self._event(db, t['id'], cur.lastrowid, 'proposed', source)
@@ -230,6 +242,8 @@ class Pilot:
                                    'budget_max': min(a['budget_max'], b['budget_max']),
                                    'warnings': compatible(a, b, 'B'),
                                    'scope': '平台仅匹配一位队友，不控制官方对手；游戏内关闭自动补队。'}}
+            if squad['agreement_json']:
+                result['squad']['agreement']=json.loads(squad['agreement_json'])
         return result
 
     def state(self, token):
@@ -237,7 +251,11 @@ class Pilot:
             return self._state(db, token)
 
     def join(self, token, profile):
-        if profile.get('goal') in ('33任务','跑刀','猛攻'):
+        if profile.get('schema_version') == 4:
+            from app.schemas.recruitment_v4 import RecruitmentV4
+            demo_metadata = {k:profile[k] for k in ('is_demo','demo_key') if k in profile}
+            profile = {**RecruitmentV4.model_validate(profile).profile(), **demo_metadata}
+        elif profile.get('goal') in ('33任务','跑刀','猛攻'):
             from app.schemas.pilot_preferences import Preferences
             demo_metadata = {k: profile[k] for k in ('is_demo','demo_key') if k in profile}
             profile = {**Preferences.model_validate(profile).model_dump(), **demo_metadata}

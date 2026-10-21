@@ -1,15 +1,17 @@
 import secrets
 from typing import Literal
-from fastapi import APIRouter, Header, HTTPException, Query, UploadFile, File, Form, Response
+from fastapi import Request, APIRouter, Header, HTTPException, Query, UploadFile, File, Form, Response
 from pydantic import BaseModel, Field, model_validator
 from app.services.pilot import Pilot
 from app.services.pilot_chat import PilotChat, MAX_AUDIO_BYTES
 from app.core.config import settings
+from app.services.phone_auth import PhoneAuth, PhoneError
 
 router=APIRouter(prefix='/pilot',tags=['matching-pilot'])
 service=Pilot()
 
 from app.schemas.pilot_preferences import Preferences
+from app.schemas.recruitment_v4 import RecruitmentV4
 
 class SquadActionIn(BaseModel):
     squad_id: int | None = Field(default=None, gt=0)
@@ -25,11 +27,13 @@ class Feedback(SquadActionIn):
 
 def token(authorization):
     if not authorization or not authorization.startswith('Bearer '): raise HTTPException(401,'需要体验身份')
-    return authorization[7:]
+    try:return PhoneAuth(service).resolve(authorization[7:])
+    except PhoneError as e:raise HTTPException(e.status,str(e))
 
 
 def run(fn,*args):
     try: return fn(*args)
+    except PhoneError as e: raise HTTPException(e.status,str(e))
     except PermissionError as e: raise HTTPException(403,str(e))
     except LookupError as e: raise HTTPException(404,str(e))
     except ValueError as e: raise HTTPException(400,str(e))
@@ -44,7 +48,7 @@ def register(): return service.register()
 def state(authorization: str|None=Header(default=None)): return run(service.state,token(authorization))
 
 @router.post('/join')
-def join(data: Preferences,authorization: str|None=Header(default=None)): return run(service.join,token(authorization),data.model_dump())
+def join(data: RecruitmentV4 | Preferences,authorization: str|None=Header(default=None)): return run(service.join,token(authorization),data.model_dump())
 
 @router.post('/confirm')
 def confirm(data: SquadActionIn | None=None, authorization: str|None=Header(default=None)): return run(service.action,token(authorization),'confirm',None,data.squad_id if data else None)
@@ -116,3 +120,39 @@ async def send_voice(squad_id: int, file: UploadFile=File(...), duration: float=
 def get_voice(squad_id: int, message_id: int, authorization: str|None=Header(default=None)):
     data,mime=run(PilotChat(service).audio,token(authorization),squad_id,message_id)
     return Response(content=data,media_type=mime,headers={'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'})
+
+
+class PhoneStartIn(BaseModel):
+    phone: str=Field(min_length=7,max_length=32)
+class PhoneVerifyIn(PhoneStartIn):
+    challenge_id: str=Field(min_length=16,max_length=100)
+    code: str=Field(min_length=4,max_length=10)
+class PhoneProfileIn(BaseModel):
+    profile: dict
+
+def raw_credential(authorization):
+    if not authorization or not authorization.startswith('Bearer '):raise HTTPException(401,'请先进入页面')
+    return authorization[7:]
+
+@router.get('/auth/phone/config')
+def phone_config():return {'available':PhoneAuth.available()}
+
+@router.post('/auth/phone/request')
+def phone_start(data:PhoneStartIn, request:Request, authorization:str|None=Header(default=None)):
+    return run(PhoneAuth(service).start,raw_credential(authorization),data.phone,request.client.host if request.client else 'unknown')
+
+@router.post('/auth/phone/verify')
+def phone_verify(data:PhoneVerifyIn, authorization:str|None=Header(default=None)):
+    return run(PhoneAuth(service).verify,raw_credential(authorization),data.challenge_id,data.phone,data.code)
+
+@router.get('/auth/me')
+def phone_me(authorization:str|None=Header(default=None)):
+    return run(PhoneAuth(service).me,raw_credential(authorization))
+
+@router.post('/auth/profile')
+def phone_profile(data:PhoneProfileIn, authorization:str|None=Header(default=None)):
+    return run(PhoneAuth(service).save_profile,raw_credential(authorization),data.profile)
+
+@router.post('/auth/logout')
+def phone_logout(authorization:str|None=Header(default=None)):
+    return run(PhoneAuth(service).logout,raw_credential(authorization))
