@@ -87,6 +87,9 @@ class Pilot:
             if 'agreement_json' not in columns:
                 db.execute('ALTER TABLE squads ADD COLUMN agreement_json TEXT')
             db.execute('CREATE TABLE IF NOT EXISTS pilot_test_people(owner TEXT PRIMARY KEY)')
+            test_columns={r['name'] for r in db.execute('PRAGMA table_info(pilot_test_people)')}
+            if 'pool_id' not in test_columns:db.execute('ALTER TABLE pilot_test_people ADD COLUMN pool_id TEXT')
+            if 'is_bot' not in test_columns:db.execute('ALTER TABLE pilot_test_people ADD COLUMN is_bot INTEGER NOT NULL DEFAULT 0')
             # Keep historical records; old unconfirmed reservations also receive a deadline.
             db.execute("UPDATE squads SET deadline=created WHERE status='proposed' AND deadline IS NULL")
 
@@ -140,6 +143,12 @@ class Pilot:
     def online(self, db, token):
         return db.execute('SELECT 1 FROM participants WHERE token=? AND last_seen>?', (token, self.presence_cutoff())).fetchone() is not None
 
+    def same_pool(self, db, a, b):
+        rows=db.execute('SELECT owner,pool_id,is_bot FROM pilot_test_people WHERE owner IN (?,?)',(a,b)).fetchall()
+        people={row['owner']:row for row in rows}
+        pa,pb=people.get(a),people.get(b)
+        return (pa['pool_id'] if pa else None)==(pb['pool_id'] if pb else None) and not (pa and pb and pa['is_bot'] and pb['is_bot'])
+
     def _latest(self, db, token):
         return db.execute('SELECT * FROM tickets WHERE token=? ORDER BY id DESC LIMIT 1', (token,)).fetchone()
 
@@ -182,6 +191,8 @@ class Pilot:
     def _reserve(self, db, a, b, source):
         if a['status'] != 'waiting' or b['status'] != 'waiting':
             raise ValueError('该玩家已被其他组局保留，请刷新候选')
+        if not self.same_pool(db,a['token'],b['token']):
+            raise ValueError('测试候选池不同，不能组队')
         if a['token'] == b['token']:
             raise ValueError('不能与自己组队')
         if self._blocked(db, a['token'], b['token']):
@@ -219,6 +230,7 @@ class Pilot:
             candidates = db.execute("SELECT * FROM tickets WHERE status='waiting' AND token<>? ORDER BY created,id",
                                     (ticket['token'],)).fetchall()
         candidates = [c for c in candidates if json.loads(c['profile']).get('discovery', 'auto') == 'auto'
+                      and self.same_pool(db,ticket['token'],c['token'])
                       and self.online(db, c['token'])
                       and not self._blocked(db, ticket['token'], c['token'])
                       and not compatible(profile, json.loads(c['profile']), ticket['arm'] if self.config()['experiment_enabled'] else 'B')]
@@ -305,7 +317,7 @@ class Pilot:
             result = []
             for row in rows:
                 other = json.loads(row['profile'])
-                if not other.get('public', False) or not self.online(db, row['token']) or self._blocked(db, token, row['token']):
+                if not self.same_pool(db,token,row['token']) or not other.get('public', False) or not self.online(db, row['token']) or self._blocked(db, token, row['token']):
                     continue
                 if query.strip() and query.strip().casefold() not in other.get('nickname','').casefold():
                     continue
@@ -346,7 +358,7 @@ class Pilot:
                 raise ValueError('只有排队时可以换一批')
             for tid in set(candidate_ids):
                 other = db.execute("SELECT * FROM tickets WHERE id=? AND status='waiting' AND token<>?", (tid, token)).fetchone()
-                if other and json.loads(other['profile']).get('public', False):
+                if other and self.same_pool(db,token,other['token']) and json.loads(other['profile']).get('public', False):
                     self._exclude(db, token, other['token'])
             self._event(db, mine['id'], None, 'batch_changed')
             return {'ok': True}

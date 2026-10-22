@@ -45,3 +45,7 @@ PILOT_METRICS_TOKEN 是可选的私人统计令牌，只放服务端；未设置
 ## 口令保护的测试工具
 
 后端 Environment 可设置 `PILOT_TEST_ACCESS_CODE`（至少 12 字符，留空关闭），不要放入前端变量或 Git。前后端一起更新，使用方式见 [测试工具](docs/testing-tools.md)。
+
+## 一人模拟测试
+
+沿用测试口令，前后端一起更新。模拟队友由 API 单进程内的后台循环运行，维持单实例与单 worker，使用方式与隔离规则见 [模拟队友](docs/simulated-peers.md)。

@@ -55,7 +55,7 @@ class TestingTools:
             owner=self.pilot.register()['token']
         with self.pilot.db() as db:
             self.authorize(db,owner,access) if not new_identity else self.schema(db)
-            db.execute('INSERT OR IGNORE INTO pilot_test_people VALUES(?)',(owner,))
+            db.execute('INSERT OR IGNORE INTO pilot_test_people(owner) VALUES(?)',(owner,))
             new_access=self.grant(db,owner)
         return {'token':owner if new_identity else None,'access_token':new_access,'profile':clean,'is_demo':True}
     def lock(self,owner,access):

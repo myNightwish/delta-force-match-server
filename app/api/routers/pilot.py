@@ -204,3 +204,22 @@ def testing_import(data:TestImportIn,request:Request,authorization:str|None=Head
 @router.post('/testing/lock')
 def testing_lock(data:TestAccessIn,authorization:str|None=Header(default=None)):
     return run(TestingTools(service).lock,token(authorization),data.access_token)
+
+
+from app.services.simulation import Simulation
+class SimulationStartIn(TestAccessIn):
+    profile:dict|None=None
+    behavior:Literal['accept','reject','timeout']='accept'
+
+@router.post('/testing/simulation/start')
+def simulation_start(data:SimulationStartIn,request:Request,authorization:str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'test_simulation',owner)
+    return run(Simulation(service).start,owner,data.access_token,data.profile,data.behavior)
+
+@router.post('/testing/simulation/current')
+def simulation_current(data:TestAccessIn,authorization:str|None=Header(default=None)):
+    return run(Simulation(service).current,token(authorization),data.access_token)
+
+@router.post('/testing/simulation/stop')
+def simulation_stop(data:TestAccessIn,authorization:str|None=Header(default=None)):
+    return run(Simulation(service).stop,token(authorization),data.access_token)

@@ -5,6 +5,7 @@ import time
 
 # Generous shared-address caps; tighter identity caps limit individual repeated actions
 POLICIES = {
+    'test_simulation': {'ip':[(5,60),(30,3600)],'owner':[(3,60)]},
     'test_unlock': {'ip':[(5,60),(20,3600)],'owner':[(5,60)]},
     'test_import': {'ip':[(20,60)],'owner':[(10,60)]},
     'register': {'ip':[(20,60),(120,3600)]},
