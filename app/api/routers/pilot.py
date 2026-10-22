@@ -54,7 +54,9 @@ def register(request:Request):
     return service.register()
 
 @router.get('/state')
-def state(authorization: str|None=Header(default=None)): return run(service.state,token(authorization))
+def state(request:Request,authorization: str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'read',owner)
+    return run(service.state,owner)
 
 @router.post('/join')
 def join(data: RecruitmentV4 | Preferences,request:Request,authorization: str|None=Header(default=None)):
@@ -89,8 +91,9 @@ class RejectIn(SquadActionIn):
     reason: Literal['goal','budget','skill','communication','time','other']
 
 @router.get('/candidates')
-def candidates(recommended: bool=True, page: int=Query(default=0,ge=0,le=1000), query: str=Query(default='',max_length=64), authorization: str|None=Header(default=None)):
-    return run(service.candidates,token(authorization),recommended,page,query)
+def candidates(request:Request,recommended: bool=True, page: int=Query(default=0,ge=0,le=1000), query: str=Query(default='',max_length=64), authorization: str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'read',owner)
+    return run(service.candidates,owner,recommended,page,query)
 
 @router.post('/invite')
 def invite(data: CandidateIn, request:Request, authorization: str|None=Header(default=None)):
@@ -117,8 +120,9 @@ class TextMessageIn(BaseModel):
     content: str = Field(min_length=1, max_length=2000)
 
 @router.get('/squads/{squad_id}/messages')
-def messages(squad_id: int, after: int=Query(default=0,ge=0), authorization: str|None=Header(default=None)):
-    return run(PilotChat(service).messages,token(authorization),squad_id,after)
+def messages(squad_id: int, request:Request, after: int=Query(default=0,ge=0), authorization: str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'read',owner)
+    return run(PilotChat(service).messages,owner,squad_id,after)
 
 @router.post('/squads/{squad_id}/messages')
 def send_message(squad_id: int, data: TextMessageIn, authorization: str|None=Header(default=None)):
@@ -223,3 +227,64 @@ def simulation_current(data:TestAccessIn,authorization:str|None=Header(default=N
 @router.post('/testing/simulation/stop')
 def simulation_stop(data:TestAccessIn,authorization:str|None=Header(default=None)):
     return run(Simulation(service).stop,token(authorization),data.access_token)
+
+# Growth features: public links expose only recruitment fields; operations endpoints fail closed.
+from app.services.growth import Growth, ActivityIn
+
+def operator(authorization):
+    credential=authorization[7:] if authorization and authorization.startswith('Bearer ') else ''
+    if len(settings.PILOT_METRICS_TOKEN)<32 or not secrets.compare_digest(credential,settings.PILOT_METRICS_TOKEN):
+        raise HTTPException(403,'无权访问运营管理')
+
+class VisitIn(BaseModel):
+    source:Literal['direct','share']='direct'
+
+@router.post('/growth/visit')
+def growth_visit(data:VisitIn,request:Request,authorization:str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'growth',owner)
+    return run(Growth(service).visit,owner,data.source)
+
+@router.post('/shares')
+def create_share(request:Request,authorization:str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'growth',owner)
+    return run(Growth(service).create_share,owner)
+
+@router.get('/shares/{code}')
+def shared_recruitment(code:str,request:Request,authorization:str|None=Header(default=None)):
+    guard(request,'public_read')
+    return run(Growth(service).shared,code,token(authorization) if authorization else None)
+
+@router.post('/shares/{code}/invite')
+def shared_invite(code:str,request:Request,authorization:str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'invite',owner)
+    return run(Growth(service).invite_share,owner,code)
+
+@router.get('/activities')
+def list_activities(request:Request,authorization:str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'read',owner)
+    return run(Growth(service).activities,owner)
+
+@router.post('/activities/{activity_id}/reserve')
+def reserve_activity(activity_id:int,request:Request,authorization:str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'growth',owner)
+    return run(Growth(service).reserve_activity,owner,activity_id)
+
+@router.post('/activities/{activity_id}/cancel')
+def cancel_activity(activity_id:int,request:Request,authorization:str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'growth',owner)
+    return run(Growth(service).reserve_activity,owner,activity_id,True)
+
+@router.get('/operations/metrics')
+def operations_metrics(request:Request,authorization:str|None=Header(default=None)):
+    guard(request,'operator');operator(authorization)
+    return run(Growth(service).metrics)
+
+@router.post('/operations/activities')
+def operations_activity(data:ActivityIn,request:Request,authorization:str|None=Header(default=None)):
+    guard(request,'operator');operator(authorization)
+    return run(Growth(service).create_activity,data)
+
+@router.post('/operations/activities/{activity_id}/close')
+def close_activity(activity_id:int,request:Request,authorization:str|None=Header(default=None)):
+    guard(request,'operator');operator(authorization)
+    return run(Growth(service).close_activity,activity_id)

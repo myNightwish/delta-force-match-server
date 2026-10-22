@@ -24,7 +24,10 @@ async def lifespan(app: FastAPI):
         task.cancel()
         with suppress(asyncio.CancelledError):await task
 
-app = FastAPI(title='river-delta-api', version=VERSION, lifespan=lifespan)
+if settings.APP_ENV=='production' and settings.ENABLE_LEGACY_API:
+    raise RuntimeError('生产环境禁止开放旧版演示接口')
+
+app = FastAPI(docs_url=None if settings.APP_ENV=='production' else '/docs', redoc_url=None if settings.APP_ENV=='production' else '/redoc', openapi_url=None if settings.APP_ENV=='production' else '/openapi.json', title='river-delta-api', version=VERSION, lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip().rstrip('/') for origin in settings.CORS_ORIGINS.split(',') if origin.strip()],
@@ -32,6 +35,8 @@ app.add_middleware(
     allow_methods=['GET', 'POST', 'OPTIONS'],
     allow_headers=['Authorization', 'Content-Type'],
 )
+from app.services.http_security import HttpSafety
+app.add_middleware(HttpSafety)
 app.include_router(pilot.router, prefix='/api')
 
 # The legacy SMS/OCR/payment stubs are not exposed by the public matching service.

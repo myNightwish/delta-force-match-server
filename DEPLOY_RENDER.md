@@ -49,3 +49,14 @@ PILOT_METRICS_TOKEN 是可选的私人统计令牌，只放服务端；未设置
 ## 一人模拟测试
 
 沿用测试口令，前后端一起更新。模拟队友由 API 单进程内的后台循环运行，维持单实例与单 worker，使用方式与隔离规则见 [模拟队友](docs/simulated-peers.md)。
+
+
+## 招募分享、预约与运营管理
+
+配置后端 PILOT_METRICS_TOKEN（至少 32 字符随机值），用于页面底部运营管理；不要写入前端环境变量
+
+生产安装当前 requirements.txt，旧演示接口和旧 JWT/OCR/支付依赖不在当前产品支持范围
+
+新表自动建立，请先备份持久数据库，保持单实例运行
+
+功能说明见 docs/growth-features.md，安全和三人改造评估见 docs/security-and-three-player-review.md

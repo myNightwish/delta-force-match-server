@@ -1,3 +1,5 @@
+> 当前产品入口为两人招募匹配 API；下文历史架构介绍包含旧演示模块，当前部署与功能请以 [部署说明](DEPLOY_RENDER.md) 和 [当前功能说明](docs/growth-features.md) 为准
+
 # 三角洲组队匹配 · 服务端 (MVP)
 
 FastAPI + SQLAlchemy 2.0 + 自建 PostgreSQL，按《服务端详细设计文档 v1.2》实现的
