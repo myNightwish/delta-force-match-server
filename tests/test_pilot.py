@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.services.pilot import Pilot, compatible
 from app.api.routers.pilot import Preferences
 
-P=dict(nickname='test',game_id='secret-id',region='NA',platform='PC',language='中文',map='零号大坝',difficulty='普通',voice='开麦',slot='现在起一小时',goal='任务',budget_min=20,budget_max=50,rank=4,skill=3,gap=1)
+P=dict(nickname='test',game_id='secret-id',region='NA',platform='PC',language='language.zh',map='map.zero_dam',difficulty='difficulty.normal',voice='voice.mic',slot='slot.next_hour',goal='goal.legacy_tasks',budget_min=20,budget_max=50,rank=4,skill=3,gap=1)
 R=dict(played=True,again='yes',goal_met=True,budget_met=True,skill_met=True,reason='')
 
 class PilotTest(unittest.TestCase):
@@ -23,13 +23,13 @@ class PilotTest(unittest.TestCase):
         self.p.join(a,P);self.p.join(b,P)
         return a,b
     def test_three_conditions_and_mutual_gap(self):
-        self.assertTrue(compatible(P,{**P,'goal':'主动交战'},'B'))
+        self.assertTrue(compatible(P,{**P,'goal':'goal.legacy_aggressive'},'B'))
         self.assertTrue(compatible(P,{**P,'budget_min':51,'budget_max':60},'B'))
         self.assertTrue(compatible(P,{**P,'skill':4,'gap':0},'B'))
         self.assertFalse(compatible(P,{**P,'budget_min':50,'budget_max':60},'B'))
     def test_control_only_rank_after_hard_conditions(self):
         a,b=self.person('A'),self.person('A');self.p.join(a,P)
-        state=self.p.join(b,{**P,'goal':'主动交战','budget_min':80,'budget_max':90,'skill':5})
+        state=self.p.join(b,{**P,'goal':'goal.legacy_aggressive','budget_min':80,'budget_max':90,'skill':5})
         self.assertIsNotNone(state['squad']);self.assertEqual(len(state['squad']['agreement']['warnings']),3)
     def test_hard_conditions_never_relaxed(self):
         for arm in ['A','B']:

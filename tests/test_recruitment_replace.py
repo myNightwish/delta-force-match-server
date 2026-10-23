@@ -18,7 +18,7 @@ class RecruitmentReplaceTests(unittest.TestCase):
     def tearDown(self):self.tmp.cleanup()
     def person(self):
         token=self.p.register()['token'];state=self.p.join(token,copy.deepcopy(PLAN));return token,state['ticket']['id']
-    def changed(self):return {**copy.deepcopy(PLAN),'goal':'猛攻','combat_score':75,'strength_range_mode':'percent','strength_tolerance_percent':40}
+    def changed(self):return {**copy.deepcopy(PLAN),'goal':'goal.aggressive','combat_score':75,'strength_range_mode':'percent','strength_tolerance_percent':40}
     def test_replace_ends_old_ticket_and_resets_queue_age_with_server_score(self):
         owner,old=self.person();earlier=(datetime.now(timezone.utc)-timedelta(minutes=10)).isoformat()
         with self.p.db() as db:db.execute('UPDATE tickets SET created=? WHERE id=?',(earlier,old))

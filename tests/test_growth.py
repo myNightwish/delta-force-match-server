@@ -26,7 +26,7 @@ class GrowthTests(unittest.TestCase):
   return t
  def h(self,t):return {'Authorization':'Bearer '+t}
  def activity(self,**patches):
-  return ActivityIn.model_validate(dict(title='周末组队',starts_at=datetime.now(timezone.utc)+timedelta(hours=2),region='SEA',platform='PC',language='中文',goal='搜打撤',capacity=2,**patches))
+  return ActivityIn.model_validate(dict(title='周末组队',starts_at=datetime.now(timezone.utc)+timedelta(hours=2),region='SEA',platform='PC',language='language.zh',goal='goal.loot_extract',capacity=2,**patches))
  def test_public_share_allowlist_and_stable_code(self):
   a=self.person();code=self.g.create_share(a)['code'];self.assertEqual(code,self.g.create_share(a)['code'])
   result=self.g.shared(code);self.assertNotIn(a,json.dumps(result));self.assertNotIn('confidential_kd',result['profile']);self.assertNotIn('game_id',result['profile']);self.assertNotIn('id',result)

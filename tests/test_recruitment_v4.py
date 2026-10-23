@@ -11,7 +11,7 @@ from app.services.pilot import Pilot, assessment
 from app.services.pilot_chat import PilotChat
 from test_recruitment import BASE as OLD
 
-PLAN=dict(schema_version=4,nickname='向导测试',region='NA',platform='PC',language='中文',voice='开麦',slot='现在起一小时',goal='搜打撤',tasks=[],maps=[dict(map='零号大坝',difficulty='普通')],helmet=4,armor=4,ammo=4,style=3,partner_style_min=1,partner_style_max=5,partner_helmet_min=2,partner_armor_min=2,partner_ammo_min=2,score_mode='auto',confidential_kd=2,top_secret_kd=2,combat_score=50,strength_range_mode='auto',discovery='browse',public=True)
+PLAN=dict(schema_version=4,listing_language='zh',nickname='向导测试',region='NA',platform='PC',language='language.zh',voice='voice.mic',slot='slot.next_hour',goal='goal.loot_extract',tasks=[],maps=[dict(map='map.zero_dam',difficulty='difficulty.normal')],helmet=4,armor=4,ammo=4,style=3,partner_style_min=1,partner_style_max=5,partner_helmet_min=2,partner_armor_min=2,partner_ammo_min=2,score_mode='auto',confidential_kd=2,top_secret_kd=2,combat_score=50,strength_range_mode='auto',discovery='browse',public=True)
 
 class V4Tests(unittest.TestCase):
  def setUp(self):
@@ -30,7 +30,7 @@ class V4Tests(unittest.TestCase):
   check=assessment(sa['ticket']['profile'],sb['ticket']['profile'])
   self.assertFalse(check['eligible'])
   failed={c['label'] for c in check['checks'] if not c['ok']}
-  self.assertIn('我的装备达到对方门槛',failed);self.assertIn('我的打法符合对方期望',failed)
+  self.assertIn('ui.your_gear_meets_their_minimum_357',failed);self.assertIn('ui.your_playstyle_fits_their_range_363',failed)
  def test_auto_range_recomputed_not_trusted(self):
   _,s=self.join(strength_min=999,strength_max=999,strength_score=999)
   p=s['ticket']['profile'];self.assertEqual((p['strength_score'],p['strength_min'],p['strength_max']),(100,70,130))
@@ -46,34 +46,34 @@ class V4Tests(unittest.TestCase):
   self.assertEqual(z['ticket']['profile']['strength_min'],0)
   self.assertEqual(z['ticket']['profile']['strength_max'],0)
  def test_map_and_task_intersections_are_frozen_in_agreement(self):
-  a,sa=self.join(goal='33任务',tasks=['调查','击杀干员'],maps=[dict(map='零号大坝',difficulty='普通'),dict(map='巴克什',difficulty='绝密')])
-  b,sb=self.join(goal='33任务',tasks=['放置','击杀干员'],maps=[dict(map='零号大坝',difficulty='机密'),dict(map='巴克什',difficulty='绝密')])
+  a,sa=self.join(goal='goal.missions',tasks=['task.investigate','task.eliminate_operators'],maps=[dict(map='map.zero_dam',difficulty='difficulty.normal'),dict(map='map.brakkesh',difficulty='difficulty.top_secret')])
+  b,sb=self.join(goal='goal.missions',tasks=['task.place','task.eliminate_operators'],maps=[dict(map='map.zero_dam',difficulty='difficulty.confidential'),dict(map='map.brakkesh',difficulty='difficulty.top_secret')])
   s=self.p.invite(a,sb['ticket']['id']);ag=s['squad']['agreement']
-  self.assertEqual((ag['map'],ag['difficulty']),('巴克什','绝密'));self.assertEqual(ag['tasks'],['击杀干员'])
+  self.assertEqual((ag['map'],ag['difficulty']),('map.brakkesh','difficulty.top_secret'));self.assertEqual(ag['tasks'],['task.eliminate_operators'])
   self.assertEqual(ag,Pilot(self.p.path).state(b)['squad']['agreement'])
   self.p.action(a,'confirm');self.p.action(b,'confirm')
   chat=PilotChat(self.p);chat.send(a,s['squad']['id'],'去巴克什绝密')
   self.assertEqual(chat.messages(b,s['squad']['id'])['items'][0]['content'],'去巴克什绝密')
  def test_same_map_different_mode_or_disjoint_tasks_do_not_match(self):
-  _,a=self.join(goal='33任务',tasks=['调查'])
-  _,b=self.join(goal='33任务',tasks=['放置'],maps=[dict(map='零号大坝',difficulty='机密')])
+  _,a=self.join(goal='goal.missions',tasks=['task.investigate'])
+  _,b=self.join(goal='goal.missions',tasks=['task.place'],maps=[dict(map='map.zero_dam',difficulty='difficulty.confidential')])
   self.assertFalse(assessment(a['ticket']['profile'],b['ticket']['profile'])['eligible'])
  def test_knife_ignores_both_equipment_requirements(self):
-  a,sa=self.join(goal='卡战备跑刀',helmet=None,armor=None,ammo=None,partner_helmet_min=None,partner_armor_min=None,partner_ammo_min=None)
-  _,sb=self.join(goal='卡战备跑刀')
+  a,sa=self.join(goal='goal.budget_run',helmet=None,armor=None,ammo=None,partner_helmet_min=None,partner_armor_min=None,partner_ammo_min=None)
+  _,sb=self.join(goal='goal.budget_run')
   self.assertTrue(assessment(sa['ticket']['profile'],sb['ticket']['profile'])['eligible'])
   self.assertIsNone(sb['ticket']['profile']['helmet']);self.assertIsNone(sb['ticket']['profile']['partner_helmet_min'])
  def test_auto_uses_new_rules_across_shared_pool(self):
   a,sa=self.join(discovery='auto',style=2,partner_style_min=4,partner_style_max=5)
   b,sb=self.join(discovery='auto',style=4,partner_style_min=1,partner_style_max=3)
-  self.assertIsNotNone(sb['squad']);self.assertEqual(sb['squad']['agreement']['map'],'零号大坝')
+  self.assertIsNotNone(sb['squad']);self.assertEqual(sb['squad']['agreement']['map'],'map.zero_dam')
  def test_old_tickets_preserved_but_not_silently_mixed(self):
   _,a=self.join()
   t=self.p.register()['token'];b=self.p.join(t,OLD)
   self.assertFalse(assessment(a['ticket']['profile'],b['ticket']['profile'])['eligible'])
   with self.p.db() as db:self.assertEqual(db.execute('SELECT count(*) FROM tickets').fetchone()[0],2)
  def test_schema_rejects_invalid_and_missing_values(self):
-  cases=[dict(maps=[]),dict(maps=[dict(map='巴克什',difficulty='普通')]),dict(maps=PLAN['maps']*2),dict(goal='33任务',tasks=[]),dict(tasks=['invalid']),dict(helmet=7),dict(helmet=None),dict(partner_helmet_min=5),dict(partner_style_min=5,partner_style_max=2),dict(manual_score=-1,score_mode='manual'),dict(score_mode='manual',manual_score=float('inf')),dict(strength_range_mode='custom',strength_min=100,strength_max=90)]
+  cases=[dict(maps=[]),dict(maps=[dict(map='map.brakkesh',difficulty='difficulty.normal')]),dict(maps=PLAN['maps']*2),dict(goal='goal.missions',tasks=[]),dict(tasks=['invalid']),dict(helmet=7),dict(helmet=None),dict(partner_helmet_min=5),dict(partner_style_min=5,partner_style_max=2),dict(manual_score=-1,score_mode='manual'),dict(score_mode='manual',manual_score=float('inf')),dict(strength_range_mode='custom',strength_min=100,strength_max=90)]
   for patch in cases:
    with self.subTest(patch=patch),self.assertRaises(ValidationError):RecruitmentV4.model_validate({**copy.deepcopy(PLAN),**patch})
  def test_manual_score_and_missing_metrics_rejected(self):

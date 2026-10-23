@@ -29,7 +29,7 @@ class PresenceRecoveryTests(unittest.TestCase):
         self.assertIn(bid,[x['id'] for x in self.p.candidates(a,True)['items']])
     def test_stale_candidate_invitation_rejected(self):
         a,_=self.person();b,bid=self.person();self.offline(b)
-        with self.assertRaisesRegex(ValueError,'不在线'):self.p.invite(a,bid)
+        with self.assertRaisesRegex(ValueError,'ui.this_player_is_offline_refresh_the_candidates'):self.p.invite(a,bid)
         self.assertEqual(self.p.state(a)['ticket']['status'],'waiting')
     def test_auto_does_not_reserve_offline_player_then_resumes(self):
         a,_=self.person(discovery='auto');self.offline(a)
@@ -64,7 +64,7 @@ class PresenceRecoveryTests(unittest.TestCase):
             response=client.get('/api/pilot/state',headers={'Authorization':'Bearer orphaned'})
             self.assertEqual(response.status_code,401)
             self.assertEqual(response.json()['detail']['code'],'anonymous_identity_invalid')
-            self.assertEqual(client.get('/api/pilot/state').json()['detail'],'需要体验身份')
+            self.assertEqual(client.get('/api/pilot/state').json()['detail'],'ui.an_anonymous_session_is_required')
             # A malformed join is still a validation error, never an identity reset signal
             response=client.post('/api/pilot/join',json={},headers={'Authorization':'Bearer orphaned'})
             self.assertEqual(response.status_code,422)

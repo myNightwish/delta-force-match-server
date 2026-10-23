@@ -14,13 +14,13 @@ from test_recruitment_v4 import PLAN
 
 
 def expected(a,b):
-    if any(a[k]!=b[k] for k in ('region','platform','language','voice','slot','goal')):return False
+    if any(a[k]!=b[k] for k in ('region','platform','listing_language','voice','slot','goal')):return False
     if not {(m['map'],m['difficulty']) for m in a['maps']} & {(m['map'],m['difficulty']) for m in b['maps']}:return False
-    if a['goal']=='33任务' and not set(a['tasks']) & set(b['tasks']):return False
+    if a['goal']=='goal.missions' and not set(a['tasks']) & set(b['tasks']):return False
     for own,peer in ((a,b),(b,a)):
         if not own['strength_min']<=peer['strength_score']<=own['strength_max']:return False
         if not own['partner_style_min']<=peer['style']<=own['partner_style_max']:return False
-        if own['goal']!='卡战备跑刀' and any(peer[k]<own['partner_'+k+'_min'] for k in ('helmet','armor','ammo')):return False
+        if own['goal']!='goal.budget_run' and any(peer[k]<own['partner_'+k+'_min'] for k in ('helmet','armor','ammo')):return False
     return True
 
 class MatchingReliabilityTests(unittest.TestCase):
@@ -34,21 +34,21 @@ class MatchingReliabilityTests(unittest.TestCase):
         rng=random.Random(20261023);accepted=0
         pairs=[{'map':m,'difficulty':d} for m,ds in MAP_MODES.items() for d in ds]
         for i in range(5000):
-            raw=copy.deepcopy(PLAN);raw.update(goal=rng.choice(['33任务','搜打撤','猛攻','卡战备跑刀']),tasks=rng.sample(['调查','放置','击杀干员'],rng.randint(1,3)),maps=rng.sample(pairs,rng.randint(1,2)))
+            raw=copy.deepcopy(PLAN);raw.update(goal=rng.choice(['goal.missions','goal.loot_extract','goal.aggressive','goal.budget_run']),tasks=rng.sample(['task.investigate','task.place','task.eliminate_operators'],rng.randint(1,3)),maps=rng.sample(pairs,rng.randint(1,2)))
             # Select distinct maps, keeping the fixture valid independently of the evaluator
             raw['maps']=list({m['map']:m for m in raw['maps']}.values())
             a=RecruitmentV4.model_validate(raw).profile();b=copy.deepcopy(a)
             for _ in range(rng.randint(0,4)):
-                key=rng.choice(['region','platform','language','voice','slot','goal','maps','tasks','strength_score','strength_min','strength_max','style','partner_style_min','partner_style_max','helmet','partner_helmet_min'])
-                options={'region':['NA','EU'],'platform':['PC','Mobile'],'language':['中文','English'],'voice':['开麦','听指挥与标记'],'slot':['现在起一小时','今天晚间'],'goal':['33任务','搜打撤','猛攻','卡战备跑刀']}
+                key=rng.choice(['region','platform','listing_language','voice','slot','goal','maps','tasks','strength_score','strength_min','strength_max','style','partner_style_min','partner_style_max','helmet','partner_helmet_min'])
+                options={'region':['NA','EU'],'platform':['PC','Mobile'],'listing_language':['zh','en'],'voice':['voice.mic','voice.listen'],'slot':['slot.next_hour','slot.today_evening'],'goal':['goal.missions','goal.loot_extract','goal.aggressive','goal.budget_run']}
                 if key in options:b[key]=rng.choice(options[key])
                 elif key=='maps':b[key]=rng.sample(pairs,rng.randint(1,3))
-                elif key=='tasks':b[key]=rng.sample(['调查','放置','击杀干员'],rng.randint(0,3))
+                elif key=='tasks':b[key]=rng.sample(['task.investigate','task.place','task.eliminate_operators'],rng.randint(0,3))
                 elif key.startswith('strength'):b[key]=rng.choice([0,69.99,70,100,130,130.01,1000000000])
                 else:b[key]=rng.randint(1,5)
             # Null gear is meaningful only to knife; non-knife comparisons need numeric gear
             for plan in (a,b):
-                if plan['goal']!='卡战备跑刀':
+                if plan['goal']!='goal.budget_run':
                     for k in ('helmet','armor','ammo'):
                         if plan[k] is None:plan[k]=4
                         if plan['partner_'+k+'_min'] is None:plan['partner_'+k+'_min']=2

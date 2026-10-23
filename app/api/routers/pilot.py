@@ -27,7 +27,7 @@ class Feedback(SquadActionIn):
 
 
 def token(authorization):
-    if not authorization or not authorization.startswith('Bearer '): raise HTTPException(401,'需要体验身份')
+    if not authorization or not authorization.startswith('Bearer '): raise HTTPException(401,'ui.an_anonymous_session_is_required')
     try:return PhoneAuth(service).resolve(authorization[7:])
     except PhoneError as e:raise HTTPException(e.status,str(e))
 
@@ -92,7 +92,7 @@ def metrics(authorization: str|None=Header(default=None)):
     if settings.APP_ENV == 'production':
         credential = authorization[7:] if authorization and authorization.startswith('Bearer ') else ''
         if not settings.PILOT_METRICS_TOKEN or not secrets.compare_digest(credential, settings.PILOT_METRICS_TOKEN):
-            raise HTTPException(403, '无权访问内部统计')
+            raise HTTPException(403, 'ui.you_do_not_have_access_to_internal_metrics')
     return service.metrics()
 
 
@@ -106,9 +106,9 @@ class RejectIn(SquadActionIn):
     reason: Literal['goal','budget','skill','communication','time','other']
 
 @router.get('/candidates')
-def candidates(request:Request,recommended: bool=True, page: int=Query(default=0,ge=0,le=1000), query: str=Query(default='',max_length=64), authorization: str|None=Header(default=None)):
+def candidates(request:Request,recommended: bool=True, page: int=Query(default=0,ge=0,le=1000), query: str=Query(default='',max_length=64), listing_language: Literal['zh','en']='zh', authorization: str|None=Header(default=None)):
     owner=token(authorization);guard(request,'read',owner)
-    return run(service.candidates,owner,recommended,page,query)
+    return run(service.candidates,owner,recommended,page,query,listing_language)
 
 @router.post('/invite')
 def invite(data: CandidateIn, request:Request, authorization: str|None=Header(default=None)):
@@ -169,7 +169,7 @@ class PhoneProfileIn(BaseModel):
     profile: dict
 
 def raw_credential(authorization):
-    if not authorization or not authorization.startswith('Bearer '):raise HTTPException(401,'请先进入页面')
+    if not authorization or not authorization.startswith('Bearer '):raise HTTPException(401,'ui.open_the_main_page_first')
     return authorization[7:]
 
 @router.get('/auth/phone/config')
@@ -249,7 +249,7 @@ from app.services.growth import Growth, ActivityIn
 def operator(authorization):
     credential=authorization[7:] if authorization and authorization.startswith('Bearer ') else ''
     if len(settings.PILOT_METRICS_TOKEN)<32 or not secrets.compare_digest(credential,settings.PILOT_METRICS_TOKEN):
-        raise HTTPException(403,'无权访问运营管理')
+        raise HTTPException(403,'ui.you_do_not_have_access_to_operations')
 
 class VisitIn(BaseModel):
     source:Literal['direct','share']='direct'

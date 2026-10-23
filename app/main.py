@@ -37,6 +37,34 @@ app.add_middleware(
 )
 from app.services.http_security import HttpSafety
 app.add_middleware(HttpSafety)
+
+# Add codes without changing legacy detail payloads, status codes or retry headers.
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import http_exception_handler, request_validation_exception_handler
+from app.api.error_codes import error_code
+import json
+
+@app.exception_handler(StarletteHTTPException)
+async def coded_http_error(request, exc):
+    response = await http_exception_handler(request, exc)
+    if request.url.path.startswith('/api/pilot/'):
+        body = json.loads(response.body)
+        body['error_code'] = error_code(exc.status_code, exc.detail)
+        response.body = json.dumps(body, ensure_ascii=False).encode('utf-8')
+        response.headers['content-length'] = str(len(response.body))
+    return response
+
+@app.exception_handler(RequestValidationError)
+async def coded_validation_error(request, exc):
+    response = await request_validation_exception_handler(request, exc)
+    if request.url.path.startswith('/api/pilot/'):
+        body = json.loads(response.body)
+        body['error_code'] = 'message.validation_failed'
+        response.body = json.dumps(body, ensure_ascii=False).encode('utf-8')
+        response.headers['content-length'] = str(len(response.body))
+    return response
+
 app.include_router(pilot.router, prefix='/api')
 
 # The legacy SMS/OCR/payment stubs are not exposed by the public matching service.

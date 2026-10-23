@@ -27,14 +27,14 @@ class SimulationTests(unittest.TestCase):
  def test_real_players_and_other_runs_cannot_see_or_invite_bots(self):
   one=self.start();real=self.p.register()['token'];self.p.join(real,copy.deepcopy(PLAN))
   self.assertEqual(self.p.candidates(real,False)['total'],0);bot,bid=self.bot(one)
-  with self.assertRaisesRegex(ValueError,'候选池'):self.p.invite(real,bid)
+  with self.assertRaisesRegex(ValueError,'ui.players_in_different_test_pools_cannot_team_up'):self.p.invite(real,bid)
   owner2=self.p.register()['token'];access2=TestingTools(self.p).unlock(owner2,'simulation-test-code')['access_token'];two=self.sim.start(owner2,access2)
   self.assertEqual(self.p.candidates(two['token'],False)['total'],8)
-  with self.assertRaisesRegex(ValueError,'候选池'):self.p.invite(two['token'],bid)
+  with self.assertRaisesRegex(ValueError,'ui.players_in_different_test_pools_cannot_team_up'):self.p.invite(two['token'],bid)
  def test_bots_never_match_each_other(self):
   r=self.start();bot,bid=self.bot(r)
   with self.p.db() as db:other=db.execute('SELECT owner FROM pilot_sim_bots WHERE run_id=? AND owner<>? LIMIT 1',(r['run']['id'],bot)).fetchone()[0]
-  with self.assertRaisesRegex(ValueError,'候选池'):self.p.invite(other,bid)
+  with self.assertRaisesRegex(ValueError,'ui.players_in_different_test_pools_cannot_team_up'):self.p.invite(other,bid)
  def test_bot_automatically_confirms_then_sends_only_one_test_message(self):
   r=self.start();bot,bid=self.bot(r);sid=self.p.invite(r['token'],bid)['squad']['id'];self.p.action(r['token'],'confirm',expected_squad_id=sid)
   self.sim.tick();state=self.p.state(r['token']);self.assertEqual(state['squad']['status'],'ready')
@@ -68,7 +68,7 @@ class SimulationTests(unittest.TestCase):
   r=self.start();new=self.sim.start(r['token'],r['access_token'])
   self.assertNotEqual(new['run']['id'],r['run']['id']);self.assertEqual(self.p.state(r['token'])['ticket']['status'],'cancelled');self.assertEqual(self.p.candidates(new['token'],False)['total'],8)
  def test_knife_all_styles_zero_and_full_range_generate_valid_fixtures(self):
-  for patch_data in [dict(goal='卡战备跑刀'),dict(partner_style_min=1,partner_style_max=5,helmet=6,armor=6,ammo=6,partner_helmet_min=1,partner_armor_min=1,partner_ammo_min=1),dict(combat_score=0,strength_range_mode='custom',strength_min=0,strength_max=1300000000)]:
+  for patch_data in [dict(goal='goal.budget_run'),dict(partner_style_min=1,partner_style_max=5,helmet=6,armor=6,ammo=6,partner_helmet_min=1,partner_armor_min=1,partner_ammo_min=1),dict(combat_score=0,strength_range_mode='custom',strength_min=0,strength_max=1300000000)]:
    with self.subTest(patch=patch_data):
     plans=self.sim.peers(Simulation.normalize({**copy.deepcopy(PLAN),**patch_data}));self.assertEqual(len(plans),8);self.assertEqual(sum(p[1] for p in plans),2)
  def test_auto_mode_matches_self_to_bot_without_bot_bot_pairing(self):

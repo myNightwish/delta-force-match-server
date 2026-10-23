@@ -1,4 +1,4 @@
 from typing import Literal, get_args
 
-TimeSlot = Literal['现在起一小时','今天上午','今天下午','今天晚间','今天深夜','明天上午','明天下午','明天晚间']
+TimeSlot = Literal['slot.next_hour','slot.today_morning','slot.today_afternoon','slot.today_evening','slot.today_late_night','slot.tomorrow_morning','slot.tomorrow_afternoon','slot.tomorrow_evening']
 TIME_SLOT_OPTIONS = list(get_args(TimeSlot))

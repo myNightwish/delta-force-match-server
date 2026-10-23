@@ -24,11 +24,11 @@ class PilotChat:
         self.pilot.participant(db, token)
         squad = db.execute('SELECT * FROM squads WHERE id=?', (squad_id,)).fetchone()
         if not squad or squad['status'] not in ('ready', 'done'):
-            raise PermissionError('双方确认组队后才能聊天')
+            raise PermissionError('ui.both_players_must_confirm_before_chatting')
         member = db.execute('SELECT * FROM tickets WHERE id IN (?,?) AND token=?',
                             (squad['a'], squad['b'], token)).fetchone()
         if not member:
-            raise PermissionError('你不在这支队伍中')
+            raise PermissionError('ui.you_are_not_a_member_of_this_team')
         return member
 
     def _prepare(self, db, token, squad_id):
@@ -55,7 +55,7 @@ class PilotChat:
         if audio is None:
             text = text.strip()
             if not text or len(text) > 2000:
-                raise ValueError('消息需为 1–2000 字')
+                raise ValueError('ui.messages_must_contain_1_2000_characters')
         else:
             mime = (mime or '').split(';')[0].lower().strip()
             signatures = {
@@ -65,21 +65,21 @@ class PilotChat:
                 'audio/mp4': len(audio) >= 12 and audio[4:8] == b'ftyp',
             }
             if not audio or len(audio) > MAX_AUDIO_BYTES:
-                raise ValueError('语音文件不能超过 1 MB')
+                raise ValueError('ui.audio_files_cannot_exceed_1_mb')
             if not signatures.get(mime, False):
-                raise ValueError('不支持的语音格式')
+                raise ValueError('ui.unsupported_audio_format')
             if duration is None or not 0 < duration <= 60:
-                raise ValueError('语音最长 60 秒')
+                raise ValueError('ui.audio_messages_cannot_exceed_60_seconds')
         with self.pilot.db() as db:
             member = self._prepare(db, token, squad_id)
             cutoff = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
             recent = db.execute('SELECT COUNT(*) FROM pilot_messages WHERE sender_ticket=? AND created>?', (member['id'], cutoff)).fetchone()[0]
             if recent >= 20:
-                raise ValueError('消息发送太频繁，请稍后再试')
+                raise ValueError('ui.messages_are_being_sent_too_quickly_try_again_later')
             if audio is not None:
                 count = db.execute("SELECT COUNT(*) FROM pilot_messages WHERE squad_id=? AND kind='voice'", (squad_id,)).fetchone()[0]
                 if count >= 100:
-                    raise ValueError('本队语音空间已满，请使用文字')
+                    raise ValueError('ui.this_team_s_audio_storage_is_full_please_use')
             next_id = db.execute('SELECT last_id+1 FROM pilot_message_sequence WHERE singleton=1').fetchone()[0]
             db.execute('UPDATE pilot_message_sequence SET last_id=? WHERE singleton=1', (next_id,))
             cur = db.execute('INSERT INTO pilot_messages(id,squad_id,sender_ticket,kind,content,audio,mime,duration,created) VALUES(?,?,?,?,?,?,?,?,?)',
@@ -92,5 +92,5 @@ class PilotChat:
             self._prepare(db, token, squad_id)
             row = db.execute("SELECT audio,mime FROM pilot_messages WHERE id=? AND squad_id=? AND kind='voice'", (message_id, squad_id)).fetchone()
             if not row:
-                raise LookupError('语音已过期或不存在')
+                raise LookupError('ui.audio_message_expired_or_was_not_found')
             return bytes(row['audio']), row['mime']

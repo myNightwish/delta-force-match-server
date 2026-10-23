@@ -15,23 +15,23 @@ class ActivityIn(BaseModel):
     capacity: int = Field(default=30,ge=2,le=200)
     region: Literal['NA','EU','SEA','OCE','ME']
     platform: Literal['PC','Console','Mobile']
-    language: Literal['中文','English','日本語']
-    goal: Literal['33任务','卡战备跑刀','搜打撤','猛攻']
+    language: Literal['language.zh','language.en','language.ja']
+    goal: Literal['goal.missions','goal.budget_run','goal.loot_extract','goal.aggressive']
 
     @field_validator('title')
     @classmethod
     def clean_title(cls,v):
         v=v.strip()
-        if len(v)<2:raise ValueError('请填写活动名称')
+        if len(v)<2:raise ValueError('ui.enter_an_event_name')
         return v
 
     @model_validator(mode='after')
     def valid_time(self):
         now=datetime.now(timezone.utc)
-        if self.starts_at.tzinfo is None:raise ValueError('活动时间必须包含时区')
+        if self.starts_at.tzinfo is None:raise ValueError('ui.event_times_must_include_a_time_zone')
         self.starts_at=self.starts_at.astimezone(timezone.utc)
         if not now+timedelta(minutes=5)<=self.starts_at<=now+timedelta(days=30):
-            raise ValueError('请选择 5 分钟至 30 天内的开始时间')
+            raise ValueError('ui.choose_a_start_time_between_5_minutes_and_30')
         return self
 
 class Growth:
@@ -66,18 +66,18 @@ class Growth:
             self.p.participant(db,owner,touch=True);self.p._expire(db)
             row=self.p._latest(db,owner)
             if not row or row['status']!='waiting' or json.loads(row['profile']).get('schema_version')!=4 or not json.loads(row['profile']).get('public') or self._demo(db,owner):
-                raise ValueError('请先发布一条公开招募，测试身份不能分享')
+                raise ValueError('ui.publish_a_public_listing_first_test_identities_cannot_share')
             code=secrets.token_urlsafe(24)
             db.execute('INSERT INTO recruitment_shares VALUES(?,?,?) ON CONFLICT(ticket_id) DO NOTHING',(code,row['id'],self.p.now()))
             code=db.execute('SELECT code FROM recruitment_shares WHERE ticket_id=?',(row['id'],)).fetchone()[0]
             return {'code':code}
 
     def _shared(self,db,code):
-        if not re.fullmatch(r'[A-Za-z0-9_-]{32}',code):raise LookupError('招募链接不存在或已失效')
+        if not re.fullmatch(r'[A-Za-z0-9_-]{32}',code):raise LookupError('ui.this_listing_link_does_not_exist_or_has_expired')
         row=db.execute('SELECT t.* FROM recruitment_shares s JOIN tickets t ON t.id=s.ticket_id WHERE s.code=?',(code,)).fetchone()
-        if not row or self._demo(db,row['token']):raise LookupError('招募链接不存在或已失效')
+        if not row or self._demo(db,row['token']):raise LookupError('ui.this_listing_link_does_not_exist_or_has_expired')
         p=json.loads(row['profile'])
-        if not p.get('public') or row['status']!='waiting':raise LookupError('该招募已结束或名额已被保留')
+        if not p.get('public') or row['status']!='waiting':raise LookupError('ui.this_listing_has_ended_or_its_slot_is_reserved')
         return row,p
 
     def shared(self,code,owner=None):
@@ -87,7 +87,7 @@ class Growth:
             if owner:
                 self.p.participant(db,owner);mine=self.p._latest(db,owner)
             # Public allowlist: no bearer, phone, raw KD, private feedback or contact information.
-            keys=('schema_version','nickname','region','platform','language','voice','slot','goal','tasks','maps','map','difficulty','helmet','armor','ammo','style','strength_score','strength_min','strength_max','partner_style_min','partner_style_max','partner_helmet_min','partner_armor_min','partner_ammo_min')
+            keys=('schema_version','listing_language','nickname','region','platform','language','voice','slot','goal','tasks','maps','map','difficulty','helmet','armor','ammo','style','strength_score','strength_min','strength_max','partner_style_min','partner_style_max','partner_helmet_min','partner_armor_min','partner_ammo_min')
             check=assessment(json.loads(mine['profile']),p) if mine else None
             online=self.p.online(db,row['token'])
             return {'profile':{k:p[k] for k in keys if k in p},'online':online,'is_me':row['token']==owner,'assessment':check,
@@ -98,7 +98,7 @@ class Growth:
         with self.p.db() as db:
             self.p.participant(db,owner,touch=True);self.p._expire(db)
             row,_=self._shared(db,code);mine=self.p._latest(db,owner)
-            if not mine:raise ValueError('请先发布你的招募条件')
+            if not mine:raise ValueError('ui.publish_your_conditions_first_664')
             self.p._reserve(db,mine,row,'manual')
             return self.p._state(db,owner,auto=False)
 
@@ -106,7 +106,7 @@ class Growth:
         starts=data.starts_at;ends=starts+timedelta(minutes=data.duration_minutes)
         with self.p.db() as db:
             if db.execute("SELECT count(*) FROM growth_activities WHERE status='open' AND ends_at>?",(self.p.now(),)).fetchone()[0]>=20:
-                raise ValueError('最多同时开放 20 场活动')
+                raise ValueError('ui.at_most_20_events_can_be_open_at_once')
             cur=db.execute('INSERT INTO growth_activities(title,starts_at,ends_at,capacity,segment,status,created) VALUES(?,?,?,?,?,\'open\',?)',(data.title,starts.isoformat(),ends.isoformat(),data.capacity,json.dumps({k:getattr(data,k) for k in ('region','platform','language','goal')},ensure_ascii=False),self.p.now()))
             return {'id':cur.lastrowid}
 
@@ -120,23 +120,23 @@ class Growth:
         with self.p.db() as db:
             self.p.participant(db,owner)
             row=db.execute('SELECT * FROM growth_activities WHERE id=?',(activity_id,)).fetchone()
-            if not row:raise LookupError('活动不存在')
+            if not row:raise LookupError('ui.event_not_found')
             if cancel:
                 db.execute("UPDATE growth_reservations SET status='cancelled' WHERE activity_id=? AND owner=?",(activity_id,owner))
                 return {'ok':True}
-            if self._demo(db,owner):raise ValueError('请使用真实身份预约活动')
-            if row['status']!='open' or row['ends_at']<=self.p.now():raise ValueError('活动已结束或取消')
+            if self._demo(db,owner):raise ValueError('ui.test_identities_cannot_reserve_events')
+            if row['status']!='open' or row['ends_at']<=self.p.now():raise ValueError('ui.this_event_has_ended_or_been_cancelled')
             existing=db.execute('SELECT status FROM growth_reservations WHERE activity_id=? AND owner=?',(activity_id,owner)).fetchone()
             if existing and existing['status']=='reserved':return {'ok':True}
-            if db.execute("SELECT count(*) FROM growth_reservations r WHERE activity_id=? AND status='reserved' AND NOT EXISTS(SELECT 1 FROM pilot_test_people p WHERE p.owner=r.owner)",(activity_id,)).fetchone()[0]>=row['capacity']:raise ValueError('预约名额已满')
+            if db.execute("SELECT count(*) FROM growth_reservations r WHERE activity_id=? AND status='reserved' AND NOT EXISTS(SELECT 1 FROM pilot_test_people p WHERE p.owner=r.owner)",(activity_id,)).fetchone()[0]>=row['capacity']:raise ValueError('ui.no_reservation_slots_remain')
             overlap=db.execute("SELECT 1 FROM growth_reservations r JOIN growth_activities a ON a.id=r.activity_id WHERE r.owner=? AND r.status='reserved' AND a.status='open' AND a.starts_at<? AND a.ends_at>?",(owner,row['ends_at'],row['starts_at'])).fetchone()
-            if overlap:raise ValueError('你已预约同一时段的其他活动')
+            if overlap:raise ValueError('ui.you_already_reserved_another_event_at_this_time')
             db.execute("INSERT INTO growth_reservations VALUES(?,?,'reserved',?) ON CONFLICT(activity_id,owner) DO UPDATE SET status='reserved',created=excluded.created",(activity_id,owner,self.p.now()))
             return {'ok':True}
 
     def close_activity(self,activity_id):
         with self.p.db() as db:
-            if not db.execute('SELECT 1 FROM growth_activities WHERE id=?',(activity_id,)).fetchone():raise LookupError('活动不存在')
+            if not db.execute('SELECT 1 FROM growth_activities WHERE id=?',(activity_id,)).fetchone():raise LookupError('ui.event_not_found')
             db.execute("UPDATE growth_activities SET status='cancelled' WHERE id=?",(activity_id,))
         return {'ok':True}
 
@@ -166,4 +166,4 @@ class Growth:
             repeat=sum(n>=2 for n in counts.values())
             pct=lambda n,d:round(n/d*100,1) if d else None
             within=sum(v<=300 for v in waits)
-            return {'since':min((v['first_at'] for v in visits.values()),default=None),'visitors':len(visits),'publishers':len(published),'publication_rate':pct(len(published),len(visits)),'requests':len(cohort),'confirmed_requests':len(confirmed),'confirmation_rate':pct(len(confirmed),len(cohort)),'confirmed_within_5min':within,'within_5min_rate':pct(within,len(cohort)),'median_confirm_seconds':round(median(waits),1) if waits else None,'feedback_requests':len(reviews),'played_requests':len(played),'reported_play_rate':pct(len(played),len(reviews)),'feedback_coverage':pct(len(reviews),len(confirmed)),'willing_again_requests':len(willing),'willing_again_rate':pct(len(willing),len(played)),'repeat_publishers':repeat,'repeat_publication_rate':pct(repeat,len(published)),'notice':'按匿名身份统计，清理存储或换设备可能重复计数；实际游玩来自玩家反馈，未反馈不计为未游玩；测试身份不计入'}
+            return {'since':min((v['first_at'] for v in visits.values()),default=None),'visitors':len(visits),'publishers':len(published),'publication_rate':pct(len(published),len(visits)),'requests':len(cohort),'confirmed_requests':len(confirmed),'confirmation_rate':pct(len(confirmed),len(cohort)),'confirmed_within_5min':within,'within_5min_rate':pct(within,len(cohort)),'median_confirm_seconds':round(median(waits),1) if waits else None,'feedback_requests':len(reviews),'played_requests':len(played),'reported_play_rate':pct(len(played),len(reviews)),'feedback_coverage':pct(len(reviews),len(confirmed)),'willing_again_requests':len(willing),'willing_again_rate':pct(len(willing),len(played)),'repeat_publishers':repeat,'repeat_publication_rate':pct(repeat,len(published)),'notice':'metrics.countingNotice'}

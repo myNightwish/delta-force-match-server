@@ -53,6 +53,7 @@ class DiscoveryTest(unittest.TestCase):
         with self.p.db() as db:db.execute("UPDATE squads SET deadline='2000-01-01T00:00:00+00:00' WHERE id=?",(s['squad']['id'],))
         state=self.p.state(a)
         self.assertIsNone(state['squad'])
+        self.assertEqual(state['notice'],'ui.the_previous_confirmation_timed_out_slots_were_released_and')
         self.assertEqual(state['ticket']['status'],'waiting')
         self.assertEqual(state['ticket']['created'],start)
         self.assertEqual(self.p.state(b)['ticket']['status'],'waiting')
@@ -63,7 +64,8 @@ class DiscoveryTest(unittest.TestCase):
         self.p.action(a,'reject',{'reason':'skill'},s['squad']['id'])
         state=self.p.state(b)
         self.assertEqual(state['ticket']['status'],'waiting')
-        self.assertNotIn('实力',state['notice'])
+        self.assertNotIn('profile.skill',state['notice'])
+        self.assertEqual(state['notice'],'ui.the_previous_candidate_was_declined_your_queue_progress_was')
         self.assertEqual(self.p.candidates(a)['total'],0)
         self.assertEqual(self.p.metrics()['groups']['manual']['decline_reasons']['skill'],1)
         with self.p.db() as db:db.execute("UPDATE pilot_exclusions SET until_at='2000-01-01T00:00:00+00:00'")
@@ -114,7 +116,7 @@ class DiscoveryTest(unittest.TestCase):
 
     def test_real_users_sort_before_demo_on_first_page(self):
         a=self.player()
-        for i in range(7):self.player(is_demo=True,nickname=f'测试{i}')
+        for i in range(7):self.player(is_demo=True,nickname='ui.test')
         b=self.player(nickname='真实B')
         cards=self.p.candidates(a,False)['items']
         self.assertEqual(cards[0]['profile']['nickname'],'真实B')

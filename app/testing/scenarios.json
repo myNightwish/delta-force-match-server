@@ -1,23 +1,23 @@
 [
   {
     "id": "compatible",
-    "title": "双向兼容",
-    "expected": "应可以申请并组队，实力、打法与装备不同，但双方要求均满足",
+    "title": "testing.compatible.title",
+    "expected": "testing.compatible.expected",
     "players": [
       {
         "schema_version": 4,
         "nickname": "【测试】兼容A",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -38,22 +38,23 @@
         "strength_max": 130,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       },
       {
         "schema_version": 4,
         "nickname": "【测试】兼容B",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 3,
@@ -74,29 +75,30 @@
         "strength_max": 120,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.115
+        "combat_score": 0.115,
+        "listing_language": "zh"
       }
     ]
   },
   {
     "id": "skill",
-    "title": "实力差距",
-    "expected": "应互相可见，但不能申请，实力超出接受范围",
+    "title": "testing.skill.title",
+    "expected": "testing.skill.expected",
     "players": [
       {
         "schema_version": 4,
         "nickname": "【测试】实力A",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -115,22 +117,23 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       },
       {
         "schema_version": 4,
         "nickname": "【测试】实力B",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -149,29 +152,30 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.2
+        "combat_score": 0.2,
+        "listing_language": "zh"
       }
     ]
   },
   {
     "id": "reverse-style",
-    "title": "单向打法不符",
-    "expected": "A 接受 B，B 不接受 A，应拦截组队",
+    "title": "testing.reverse_style.title",
+    "expected": "testing.reverse_style.expected",
     "players": [
       {
         "schema_version": 4,
         "nickname": "【测试】打法A",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -190,22 +194,23 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       },
       {
         "schema_version": 4,
         "nickname": "【测试】打法B",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -224,29 +229,30 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       }
     ]
   },
   {
     "id": "goal",
-    "title": "合作目的不同",
-    "expected": "应互相可见，但因目标不同不能组队",
+    "title": "testing.goal.title",
+    "expected": "testing.goal.expected",
     "players": [
       {
         "schema_version": 4,
         "nickname": "【测试】目标A",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -265,22 +271,23 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       },
       {
         "schema_version": 4,
         "nickname": "【测试】目标B",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "猛攻",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.aggressive",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -299,29 +306,30 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       }
     ]
   },
   {
     "id": "map",
-    "title": "地图难度不符",
-    "expected": "同一地图但难度不同，应拦截组队",
+    "title": "testing.map.title",
+    "expected": "testing.map.expected",
     "players": [
       {
         "schema_version": 4,
         "nickname": "【测试】战场A",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -340,22 +348,23 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       },
       {
         "schema_version": 4,
         "nickname": "【测试】战场B",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "机密"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.confidential"
           }
         ],
         "helmet": 4,
@@ -374,36 +383,37 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       }
     ]
   },
   {
     "id": "task",
-    "title": "共同任务与地图",
-    "expected": "应匹配到巴克什绝密，共同任务为击杀干员",
+    "title": "testing.task.title",
+    "expected": "testing.task.expected",
     "players": [
       {
         "schema_version": 4,
         "nickname": "【测试】任务A",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "33任务",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.missions",
         "tasks": [
-          "调查",
-          "击杀干员"
+          "task.investigate",
+          "task.eliminate_operators"
         ],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           },
           {
-            "map": "巴克什",
-            "difficulty": "绝密"
+            "map": "map.brakkesh",
+            "difficulty": "difficulty.top_secret"
           }
         ],
         "helmet": 4,
@@ -422,25 +432,26 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       },
       {
         "schema_version": 4,
         "nickname": "【测试】任务B",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "33任务",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.missions",
         "tasks": [
-          "放置",
-          "击杀干员"
+          "task.place",
+          "task.eliminate_operators"
         ],
         "maps": [
           {
-            "map": "巴克什",
-            "difficulty": "绝密"
+            "map": "map.brakkesh",
+            "difficulty": "difficulty.top_secret"
           }
         ],
         "helmet": 4,
@@ -459,29 +470,30 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       }
     ]
   },
   {
     "id": "gear",
-    "title": "单向装备门槛",
-    "expected": "B 的装备未达到 A 的门槛，应拦截组队",
+    "title": "testing.gear.title",
+    "expected": "testing.gear.expected",
     "players": [
       {
         "schema_version": 4,
         "nickname": "【测试】装备A",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -500,22 +512,23 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       },
       {
         "schema_version": 4,
         "nickname": "【测试】装备B",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 3,
@@ -534,29 +547,30 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       }
     ]
   },
   {
     "id": "knife",
-    "title": "跑刀忽略装备",
-    "expected": "应允许组队，装备字段不会参与跑刀匹配",
+    "title": "testing.knife.title",
+    "expected": "testing.knife.expected",
     "players": [
       {
         "schema_version": 4,
         "nickname": "【测试】跑刀A",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "卡战备跑刀",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.budget_run",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -575,22 +589,23 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       },
       {
         "schema_version": 4,
         "nickname": "【测试】跑刀B",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "卡战备跑刀",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.budget_run",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": null,
@@ -609,29 +624,30 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       }
     ]
   },
   {
     "id": "auto",
-    "title": "公开自动匹配",
-    "expected": "双方发布后应自动生成同一个待确认队伍",
+    "title": "testing.auto.title",
+    "expected": "testing.auto.expected",
     "players": [
       {
         "schema_version": 4,
         "nickname": "【测试】自动A",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -650,22 +666,23 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       },
       {
         "schema_version": 4,
         "nickname": "【测试】自动B",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -684,29 +701,30 @@
         "public": true,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.11
+        "combat_score": 0.11,
+        "listing_language": "zh"
       }
     ]
   },
   {
     "id": "private-auto",
-    "title": "私密自动匹配",
-    "expected": "大厅不可见，双方发布后仍应自动匹配",
+    "title": "testing.private_auto.title",
+    "expected": "testing.private_auto.expected",
     "players": [
       {
         "schema_version": 4,
         "nickname": "【测试】私密A",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -725,22 +743,23 @@
         "public": false,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       },
       {
         "schema_version": 4,
         "nickname": "【测试】私密B",
         "region": "NA",
         "platform": "PC",
-        "language": "中文",
-        "voice": "开麦",
-        "slot": "现在起一小时",
-        "goal": "搜打撤",
+        "language": "language.zh",
+        "voice": "voice.mic",
+        "slot": "slot.next_hour",
+        "goal": "goal.loot_extract",
         "tasks": [],
         "maps": [
           {
-            "map": "零号大坝",
-            "difficulty": "普通"
+            "map": "map.zero_dam",
+            "difficulty": "difficulty.normal"
           }
         ],
         "helmet": 4,
@@ -759,7 +778,8 @@
         "public": false,
         "confidential_kd": 1000,
         "top_secret_kd": 1000,
-        "combat_score": 0.1
+        "combat_score": 0.1,
+        "listing_language": "zh"
       }
     ]
   }

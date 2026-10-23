@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 
 from app.core.config import settings
 
-VERSION = 'two-person-recruitment-v4'
+VERSION = 'two-person-recruitment-v5'
 PRESENCE_SECONDS = 75
 
 class RecruitmentConflictError(ValueError):
@@ -17,52 +17,52 @@ class RecruitmentConflictError(ValueError):
 class InvalidIdentityError(ValueError):
     pass
 
-HARD_FIELDS = [('region', '区服'), ('platform', '平台'), ('language', '语言'),
-               ('map', '地图'), ('difficulty', '难度'), ('voice', '语音方式'), ('slot', '开局时段')]
-REASONS = {'goal': '目标不同', 'budget': '装备预算不合适', 'skill': '实力预期不符',
-           'communication': '沟通方式不合适', 'time': '时间安排变化', 'other': '其他原因'}
+HARD_FIELDS = [('region', 'profile.region'), ('platform', 'profile.platform'), ('language', 'ui.language'),
+               ('map', 'recruitment.maps'), ('difficulty', 'profile.difficulty'), ('voice', 'profile.voice'), ('slot', 'recruitment.slot')]
+REASONS = {'goal': 'ui.different_goals', 'budget': 'ui.gear_budget_mismatch', 'skill': 'ui.skill_expectations_differ',
+           'communication': 'ui.communication_mismatch', 'time': 'ui.schedule_changed', 'other': 'ui.other_reason'}
 
 
 def assessment(a, b):
     if a.get('schema_version') == 4 or b.get('schema_version') == 4:
         if a.get('schema_version') != b.get('schema_version'):
-            return {'eligible':False,'hard_conflicts':['招募条件版本不同，请更新本局条件'],'checks':[],'skill_gap':None}
+            return {'eligible':False,'hard_conflicts':['matching.versionConflict'],'checks':[],'skill_gap':None}
         from app.services.recruitment_rules import assessment_v4
         return assessment_v4(a,b)
-    hard = [label + '不一致' for field, label in HARD_FIELDS if a[field] != b[field]]
+    hard = ['conflict.'+field for field, _ in HARD_FIELDS if a[field] != b[field]]
     gap = abs(a['skill'] - b['skill'])
     checks = [
-        {'label': '本局目标一致', 'ok': a['goal'] == b['goal']},
-        {'label': '装备预算有交集', 'ok': max(a['budget_min'], b['budget_min']) <= min(a['budget_max'], b['budget_max'])},
-        {'label': '对方实力在我接受范围内', 'ok': gap <= a['gap']},
-        {'label': '我的实力在对方接受范围内', 'ok': gap <= b['gap']},
+        {'label': 'ui.same_session_goal', 'ok': a['goal'] == b['goal']},
+        {'label': 'ui.compatible_gear_budgets', 'ok': max(a['budget_min'], b['budget_min']) <= min(a['budget_max'], b['budget_max'])},
+        {'label': 'ui.their_skill_fits_your_range_358', 'ok': gap <= a['gap']},
+        {'label': 'ui.your_skill_fits_their_range_359', 'ok': gap <= b['gap']},
     ]
-    if a['goal'] in ('33任务','跑刀','猛攻') or b['goal'] in ('33任务','跑刀','猛攻'):
-        checks[2:4] = [{'label':'对方实力符合我的范围','ok': b.get('strength_score') is not None and a.get('strength_min') is not None and a.get('strength_max') is not None and a['strength_min'] <= b['strength_score'] <= a['strength_max']},
-                       {'label':'我的实力符合对方范围','ok': a.get('strength_score') is not None and b.get('strength_min') is not None and b.get('strength_max') is not None and b['strength_min'] <= a['strength_score'] <= b['strength_max']}]
-        checks[1] = {'label': '装备等级一致', 'ok': a['goal'] == b['goal'] and (a['goal'] == '跑刀' or all(a.get(k) is not None and a.get(k) == b.get(k) for k in ('armor','ammo')))}
-        if a['goal'] == b['goal'] == '33任务':
-            checks.append({'label':'任务类型一致','ok': bool(a.get('task')) and a.get('task') == b.get('task')})
-        checks.extend([{'label':'对方打法符合我的期望','ok': a.get('partner_style') is not None and a.get('partner_style') == b.get('style')},
-                       {'label':'我的打法符合对方期望','ok': b.get('partner_style') is not None and b.get('partner_style') == a.get('style')}])
+    if a['goal'] in ('goal.missions','goal.budget_run','goal.aggressive') or b['goal'] in ('goal.missions','goal.budget_run','goal.aggressive'):
+        checks[2:4] = [{'label':'ui.their_skill_fits_your_range_360','ok': b.get('strength_score') is not None and a.get('strength_min') is not None and a.get('strength_max') is not None and a['strength_min'] <= b['strength_score'] <= a['strength_max']},
+                       {'label':'ui.your_skill_fits_their_range_361','ok': a.get('strength_score') is not None and b.get('strength_min') is not None and b.get('strength_max') is not None and b['strength_min'] <= a['strength_score'] <= b['strength_max']}]
+        checks[1] = {'label': 'ui.compatible_gear_levels', 'ok': a['goal'] == b['goal'] and (a['goal'] == 'goal.budget_run' or all(a.get(k) is not None and a.get(k) == b.get(k) for k in ('armor','ammo')))}
+        if a['goal'] == b['goal'] == 'goal.missions':
+            checks.append({'label':'ui.same_mission_type','ok': bool(a.get('task')) and a.get('task') == b.get('task')})
+        checks.extend([{'label':'ui.their_playstyle_fits_your_range_362','ok': a.get('partner_style') is not None and a.get('partner_style') == b.get('style')},
+                       {'label':'ui.your_playstyle_fits_their_range_363','ok': b.get('partner_style') is not None and b.get('partner_style') == a.get('style')}])
     return {'eligible': not hard and all(c['ok'] for c in checks), 'hard_conflicts': hard,
-            'checks': checks, 'skill_gap': gap, 'data_source': '玩家自报，未核验'}
+            'checks': checks, 'skill_gap': gap, 'data_source': 'profile.selfReported'}
 
 
 def compatible(a, b, arm):
     check = assessment(a, b)
     reasons = list(check['hard_conflicts'])
     if a.get('schema_version') == 4 or b.get('schema_version') == 4:
-        return reasons + [c['label']+'不满足' for c in check['checks'] if not c['ok']]
-    if a['goal'] in ('33任务','跑刀','猛攻') or b['goal'] in ('33任务','跑刀','猛攻'):
-        return reasons + [c['label'] + '不满足' for c in check['checks'] if not c['ok']]
+        return reasons + [c['label'] for c in check['checks'] if not c['ok']]
+    if a['goal'] in ('goal.missions','goal.budget_run','goal.aggressive') or b['goal'] in ('goal.missions','goal.budget_run','goal.aggressive'):
+        return reasons + [c['label'] for c in check['checks'] if not c['ok']]
     if arm != 'A':
         if a['goal'] != b['goal']:
-            reasons.append('本局目标不同')
+            reasons.append('ui.different_goals')
         if not check['checks'][1]['ok']:
-            reasons.append('装备预算没有交集')
+            reasons.append('ui.gear_budget_mismatch')
         if not all(c['ok'] for c in check['checks'][2:]):
-            reasons.append('超过双方接受的实力差距')
+            reasons.append('ui.skill_expectations_differ')
     return reasons
 
 
@@ -134,7 +134,7 @@ class Pilot:
     def participant(self, db, token, touch=False):
         p = db.execute('SELECT * FROM participants WHERE token=?', (token,)).fetchone()
         if not p:
-            raise InvalidIdentityError('体验身份已失效')
+            raise InvalidIdentityError('ui.your_anonymous_session_has_expired')
         if touch:
             db.execute('UPDATE participants SET last_seen=? WHERE token=?', (self.now(), token))
         return p
@@ -212,22 +212,22 @@ class Pilot:
 
     def _reserve(self, db, a, b, source):
         if a['status'] != 'waiting' or b['status'] != 'waiting':
-            raise ValueError('该玩家已被其他组局保留，请刷新候选')
+            raise ValueError('ui.another_team_reserved_this_player_refresh_the_candidates')
         if not self.same_pool(db,a['token'],b['token']):
-            raise ValueError('测试候选池不同，不能组队')
+            raise ValueError('ui.players_in_different_test_pools_cannot_team_up')
         if a['token'] == b['token']:
-            raise ValueError('不能与自己组队')
+            raise ValueError('ui.you_cannot_team_up_with_yourself')
         if self._blocked(db, a['token'], b['token']):
-            raise ValueError('近期已跳过该候选，请选择其他玩家')
+            raise ValueError('ui.you_recently_skipped_this_candidate_choose_another_player')
         if not self.online(db, a['token']) or not self.online(db, b['token']):
-            raise ValueError('该玩家暂时不在线，请刷新候选')
+            raise ValueError('ui.this_player_is_offline_refresh_the_candidates')
         pa, pb = json.loads(a['profile']), json.loads(b['profile'])
         strategy = a['arm'] if source == 'auto' and self.config()['experiment_enabled'] else 'B'
         conflicts = compatible(pa, pb, strategy)
         if conflicts:
-            raise ValueError('无法组局：' + '；'.join(conflicts))
+            raise ValueError('matching.cannotFormTeam')
         if source == 'auto' and self.config()['experiment_enabled'] and a['arm'] != b['arm']:
-            raise ValueError('自动匹配必须在同一试验组内')
+            raise ValueError('ui.auto_match_requires_the_same_experiment_group')
         deadline = (datetime.now(timezone.utc) + timedelta(seconds=self.config()['confirm_seconds'])).isoformat()
         arm = (a['arm'] if self.config()['experiment_enabled'] else 'auto') if source == 'auto' else 'manual'
         cur = db.execute("INSERT INTO squads(arm,a,b,status,confirms,feedback,fee_cents,created,version,deadline) VALUES(?,?,?,'proposed','[]','{}',?,?,?,?)",
@@ -269,7 +269,7 @@ class Pilot:
                             'profile': json.loads(ticket['profile'])}
         event = db.execute("SELECT kind FROM pilot_events WHERE ticket_id=? AND kind IN ('rejected','timed_out','cancelled') ORDER BY id DESC LIMIT 1", (ticket['id'],)).fetchone()
         if event:
-            result['notice'] = {'rejected': '上一组候选已被婉拒，已保留排队进度。', 'timed_out': '上一组确认已超时，名额已释放，排队进度保留。', 'cancelled': '上一组已取消，未退出成员保留排队进度。'}[event['kind']]
+            result['notice'] = {'rejected': 'ui.the_previous_candidate_was_declined_your_queue_progress_was', 'timed_out': 'ui.the_previous_confirmation_timed_out_slots_were_released_and', 'cancelled': 'ui.the_previous_team_was_cancelled_remaining_players_keep_their'}[event['kind']]
         # Waiting tickets may have historical proposals, but should not display those as active.
         squad = self._squad(db, ticket) if ticket['status'] != 'waiting' else None
         if squad:
@@ -287,11 +287,11 @@ class Pilot:
                                'deadline': squad['deadline'], 'fee_cents': squad['fee_cents'],
                                'feedback_submitted': str(ticket['id']) in feedback,
                                'assessment': assessment(a, b), 'agreement': {
-                                   'goal': a['goal'] if a['goal'] == b['goal'] else '未统一：' + a['goal'] + ' / ' + b['goal'],
+                                   'goal': a['goal'] if a['goal'] == b['goal'] else 'agreement.mixedGoals',
                                    'budget_min': max(a['budget_min'], b['budget_min']),
                                    'budget_max': min(a['budget_max'], b['budget_max']),
                                    'warnings': compatible(a, b, 'B'),
-                                   'scope': '平台仅匹配一位队友，不控制官方对手；游戏内关闭自动补队。'}}
+                                   'scope': 'ui.this_service_finds_one_teammate_and_does_not_control'}}
             if squad['agreement_json']:
                 result['squad']['agreement']=json.loads(squad['agreement_json'])
         return result
@@ -305,7 +305,7 @@ class Pilot:
             from app.schemas.recruitment_v4 import RecruitmentV4
             demo_metadata = {k:profile[k] for k in ('is_demo','demo_key') if k in profile}
             profile = {**RecruitmentV4.model_validate(profile).profile(), **demo_metadata}
-        elif profile.get('goal') in ('33任务','跑刀','猛攻'):
+        elif profile.get('goal') in ('goal.missions','goal.budget_run','goal.aggressive'):
             from app.schemas.pilot_preferences import Preferences
             demo_metadata = {k: profile[k] for k in ('is_demo','demo_key') if k in profile}
             profile = {**Preferences.model_validate(profile).model_dump(), **demo_metadata}
@@ -318,10 +318,10 @@ class Pilot:
             p = self.participant(db, token, touch=True)
             if db.execute('SELECT 1 FROM pilot_test_people WHERE owner=?',(token,)).fetchone():
                 profile['is_demo']=True
-                profile['nickname']='【测试】'+profile['nickname'].removeprefix('【测试】')[:20]
+                profile['nickname']='[TEST]'+profile['nickname'].removeprefix('[TEST]')[:18]
             self._expire(db)
             if db.execute("SELECT id FROM tickets WHERE token=? AND status IN ('waiting','matched')", (token,)).fetchone():
-                raise ValueError('已有进行中的组局，请先完成或取消')
+                raise ValueError('ui.an_active_team_already_exists_finish_or_cancel_it')
             cur = db.execute("INSERT INTO tickets(token,arm,profile,status,created) VALUES(?,?,?,'waiting',?)",
                              (token, p['arm'], json.dumps(profile, ensure_ascii=False), self.now()))
             self._event(db, cur.lastrowid, None, 'joined', profile.get('discovery', 'auto'))
@@ -335,23 +335,23 @@ class Pilot:
             self._expire(db)
             current=self._latest(db,token)
             if not current or current['id']!=expected_ticket_id:
-                raise RecruitmentConflictError('招募已变化，请查看当前招募后重新选择')
+                raise RecruitmentConflictError('ui.your_listing_changed_review_it_and_try_again')
             if current['status']=='matched':
-                raise RecruitmentConflictError('已匹配到队友，请先处理现有队伍')
+                raise RecruitmentConflictError('ui.a_teammate_was_found_review_your_current_team_first')
             if current['status']!='waiting':
-                raise RecruitmentConflictError('原招募已结束，请返回后重新发布')
+                raise RecruitmentConflictError('ui.the_original_listing_has_ended_go_back_and_publish')
             if db.execute("SELECT 1 FROM tickets WHERE token=? AND id<>? AND status IN ('waiting','matched')",(token,current['id'])).fetchone():
-                raise RecruitmentConflictError('存在其他进行中的招募，请先查看当前招募')
+                raise RecruitmentConflictError('ui.another_listing_is_active_review_your_current_listing_first')
             if db.execute('SELECT 1 FROM pilot_test_people WHERE owner=?',(token,)).fetchone():
                 profile['is_demo']=True
-                profile['nickname']='【测试】'+profile['nickname'].removeprefix('【测试】')[:20]
+                profile['nickname']='[TEST]'+profile['nickname'].removeprefix('[TEST]')[:18]
             db.execute("UPDATE tickets SET status='replaced' WHERE id=?",(current['id'],))
             self._event(db,current['id'],None,'replaced')
             cur=db.execute("INSERT INTO tickets(token,arm,profile,status,created) VALUES(?,?,?,'waiting',?)",(token,participant['arm'],json.dumps(profile,ensure_ascii=False),self.now()))
             self._event(db,cur.lastrowid,None,'joined',profile.get('discovery','auto'))
             return self._state(db,token)
 
-    def candidates(self, token, recommended=True, page=0, query=""):
+    def candidates(self, token, recommended=True, page=0, query='', listing_language='zh'):
         with self.db() as db:
             self.participant(db, token, touch=True)
             self._expire(db)
@@ -361,6 +361,8 @@ class Pilot:
             result = []
             for row in rows:
                 other = json.loads(row['profile'])
+                pool=profile.get('listing_language','zh') if profile else listing_language
+                if other.get('listing_language','zh')!=pool:continue
                 if not other.get('public', False):
                     continue
                 if query.strip() and query.strip().casefold() not in other.get('nickname','').casefold():
@@ -387,9 +389,9 @@ class Pilot:
             mine = self._latest(db, token)
             other = db.execute('SELECT * FROM tickets WHERE id=?', (candidate_id,)).fetchone()
             if not mine or not other:
-                raise ValueError('请先发布本局条件，并刷新候选')
+                raise ValueError('ui.publish_your_conditions_and_refresh_the_candidates')
             if not json.loads(other['profile']).get('public', False):
-                raise ValueError('该玩家未公开招募')
+                raise ValueError('ui.this_player_s_listing_is_private')
             self._reserve(db, mine, other, 'manual')
             return self._state(db, token, auto=False)
 
@@ -399,7 +401,7 @@ class Pilot:
             self._expire(db)
             mine = self._latest(db, token)
             if not mine or mine['status'] != 'waiting':
-                raise ValueError('只有排队时可以换一批')
+                raise ValueError('ui.you_can_only_refresh_candidates_while_queued')
             for tid in set(candidate_ids):
                 other = db.execute("SELECT * FROM tickets WHERE id=? AND status='waiting' AND token<>?", (tid, token)).fetchone()
                 if other and self.same_pool(db,token,other['token']) and json.loads(other['profile']).get('public', False):
@@ -413,34 +415,34 @@ class Pilot:
             state = self._state(db, token, auto=False)
             ticket, squad = state['ticket'], state['squad']
             if not ticket:
-                raise ValueError('尚未提交组局')
+                raise ValueError('ui.you_have_not_published_a_listing')
             if expected_squad_id is not None and (not squad or squad['id'] != expected_squad_id):
-                raise ValueError('队伍已变化，请刷新后重新确认')
+                raise ValueError('ui.the_team_changed_refresh_before_confirming_again')
             if action == 'cancel':
                 if squad:
                     row = db.execute('SELECT * FROM squads WHERE id=?', (squad['id'],)).fetchone()
                     if row['status'] not in ['proposed', 'ready']:
-                        raise ValueError('本局已结束')
+                        raise ValueError('ui.this_session_has_ended')
                     if json.loads(row['feedback']):
-                        raise ValueError('已有局后反馈，请完成反馈而非取消')
+                        raise ValueError('ui.feedback_has_started_complete_it_instead_of_cancelling')
                     self._release(db, row, 'cancelled')
                 elif ticket['status'] != 'waiting':
-                    raise ValueError('本局已结束')
+                    raise ValueError('ui.this_session_has_ended')
                 db.execute("UPDATE tickets SET status='cancelled' WHERE id=?", (ticket['id'],))
             elif action == 'reject':
                 if not squad or squad['status'] != 'proposed':
-                    raise ValueError('候选已变更或确认超时，请刷新')
+                    raise ValueError('ui.the_candidate_changed_or_confirmation_expired_please_refresh')
                 if not feedback or feedback.get('reason') not in REASONS:
-                    raise ValueError('请选择一个婉拒原因')
+                    raise ValueError('ui.select_a_reason_for_declining')
                 row = db.execute('SELECT * FROM squads WHERE id=?', (squad['id'],)).fetchone()
                 self._release(db, row, 'rejected', ticket['id'], feedback['reason'])
             else:
                 if not squad:
-                    raise ValueError('没有待确认队伍，可能已超时，请刷新')
+                    raise ValueError('ui.no_team_is_awaiting_confirmation_it_may_have_expired')
                 row = db.execute('SELECT * FROM squads WHERE id=?', (squad['id'],)).fetchone()
                 if action == 'confirm':
                     if row['status'] not in ['proposed', 'ready']:
-                        raise ValueError('本局已结束')
+                        raise ValueError('ui.this_session_has_ended')
                     confirms = json.loads(row['confirms'])
                     if str(ticket['id']) not in confirms:
                         confirms.append(str(ticket['id']))
@@ -450,16 +452,16 @@ class Pilot:
                                (json.dumps(confirms), 'ready' if ready else 'proposed', row['id']))
                 elif action == 'feedback':
                     if row['status'] not in ['ready', 'done']:
-                        raise ValueError('双方确认后才能提交局后反馈')
+                        raise ValueError('ui.both_players_must_confirm_before_submitting_feedback')
                     reviews, key = json.loads(row['feedback']), str(ticket['id'])
                     if key in reviews:
-                        raise ValueError('本局反馈已提交')
+                        raise ValueError('ui.feedback_for_this_session_has_already_been_submitted')
                     reviews[key] = {**feedback, 'submitted_at': self.now()}
                     db.execute('UPDATE squads SET feedback=?,status=? WHERE id=?',
                                (json.dumps(reviews, ensure_ascii=False), 'done' if len(reviews) == 2 else 'ready', row['id']))
                     db.execute("UPDATE tickets SET status='done' WHERE id=?", (ticket['id'],))
                 else:
-                    raise ValueError('未知操作')
+                    raise ValueError('ui.unknown_action')
             return self._state(db, token, auto=False)
 
     def recent_squads(self, token, before=None):
@@ -529,4 +531,4 @@ class Pilot:
                     'budget_met': sum(r['budget_met'] for r in reviews),
                     'skill_met': sum(r['skill_met'] for r in reviews)}
             return {'groups': result, 'version': VERSION,
-                    'notice': '【测试】玩家及其组局不计入效果统计。自动匹配 A/B 与自主挑选单独统计。按本版本首次已游玩反馈计算，缺失不计为否；自主选择存在选择偏差，不可直接推断策略胜负。'}
+                    'notice': 'ui.test_players_and_teams_are_excluded_auto_match_a'}

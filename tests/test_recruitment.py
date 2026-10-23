@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from app.api.routers.pilot import Preferences
 from app.services.pilot import Pilot, assessment, compatible
 
-BASE = dict(nickname='玩家',game_id='private',region='NA',platform='PC',language='中文',map='零号大坝',difficulty='普通',voice='开麦',slot='现在起一小时',goal='33任务',task='调查',armor=3,ammo=3,style=2,partner_style=4,confidential_kd=1.5,top_secret_kd=2,combat_score=50,strength_min=0,strength_max=200,discovery='browse',public=True)
+BASE = dict(nickname='ui.player',game_id='private',region='NA',platform='PC',language='language.zh',map='map.zero_dam',difficulty='difficulty.normal',voice='voice.mic',slot='slot.next_hour',goal='goal.missions',task='task.investigate',armor=3,ammo=3,style=2,partner_style=4,confidential_kd=1.5,top_secret_kd=2,combat_score=50,strength_min=0,strength_max=200,discovery='browse',public=True)
 
 class RecruitmentTests(unittest.TestCase):
     def setUp(self):
@@ -25,23 +25,23 @@ class RecruitmentTests(unittest.TestCase):
         self.assertNotIn('game_id',proposed['squad']['members'][1]['profile'])
     def test_task_gear_style_and_reverse_strength_each_block(self):
         _,a=self.join()
-        for change in [dict(task='放置'),dict(ammo=4),dict(armor=4),dict(partner_style=1),dict(strength_min=100)]:
+        for change in [dict(task='task.place'),dict(ammo=4),dict(armor=4),dict(partner_style=1),dict(strength_min=100)]:
             _,b=self.join(style=4,**change)
             self.assertFalse(assessment(a['ticket']['profile'],b['ticket']['profile'])['eligible'])
             self.assertTrue(compatible(a['ticket']['profile'],b['ticket']['profile'],'A'))
     def test_knife_clears_irrelevant_equipment_and_task(self):
-        _,a=self.join(goal='跑刀')
-        _,b=self.join(goal='跑刀',style=4,partner_style=2,armor=5,ammo=1)
+        _,a=self.join(goal='goal.budget_run')
+        _,b=self.join(goal='goal.budget_run',style=4,partner_style=2,armor=5,ammo=1)
         p=a['ticket']['profile']
         self.assertIsNone(p['task']); self.assertIsNone(p['armor']); self.assertIsNone(p['ammo'])
         self.assertTrue(assessment(p,b['ticket']['profile'])['eligible'])
     def test_new_and_old_criteria_do_not_silently_match(self):
         _,a=self.join()
-        legacy={**a['ticket']['profile'],'goal':'任务'}
+        legacy={**a['ticket']['profile'],'goal':'goal.legacy_tasks'}
         self.assertFalse(assessment(a['ticket']['profile'],legacy)['eligible'])
     def test_auto_uses_the_same_bilateral_rules(self):
         _,a=self.join(discovery='auto')
-        _,wrong=self.join(discovery='auto',style=4,partner_style=2,task='放置')
+        _,wrong=self.join(discovery='auto',style=4,partner_style=2,task='task.place')
         self.assertIsNone(wrong['squad'])
         _,right=self.join(discovery='auto',style=4,partner_style=2)
         self.assertEqual(right['squad']['members'][0]['id'],right['ticket']['id'])

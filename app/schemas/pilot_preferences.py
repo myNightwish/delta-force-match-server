@@ -8,13 +8,13 @@ class Preferences(BaseModel):
     game_id: str=Field(default='',max_length=64)
     region: Literal['NA','EU','SEA','OCE','ME']
     platform: Literal['PC','Console','Mobile']
-    language: Literal['中文','English','日本語']
-    map: Literal['零号大坝','长弓溪谷','巴克什']
-    difficulty: Literal['简单','普通']
-    voice: Literal['开麦','听指挥与标记']
+    language: Literal['language.zh','language.en','language.ja']
+    map: Literal['map.zero_dam','map.layali_grove','map.brakkesh']
+    difficulty: Literal['difficulty.easy','difficulty.normal']
+    voice: Literal['voice.mic','voice.listen']
     slot: TimeSlot
-    goal: Literal['33任务','跑刀','猛攻','任务','搜集撤离','主动交战']
-    task: Literal['调查','放置','带出撤离任务','击杀干员','击杀特殊兵种','普通局内任务','标杆任务','命运契约'] | None = None
+    goal: Literal['goal.missions','goal.budget_run','goal.aggressive','goal.legacy_tasks','goal.legacy_loot_extract','goal.legacy_aggressive']
+    task: Literal['task.investigate','task.place','task.extract_items','task.eliminate_operators','task.eliminate_specials','task.session_missions','task.benchmark','task.fate_contract'] | None = None
     armor: int | None = Field(default=None,ge=1,le=5)
     ammo: int | None = Field(default=None,ge=1,le=5)
     style: int | None = Field(default=None,ge=1,le=5)
@@ -33,15 +33,15 @@ class Preferences(BaseModel):
     public: bool = False
     @model_validator(mode='after')
     def valid_budget(self):
-        if self.goal in ('33任务','跑刀','猛攻'):
+        if self.goal in ('goal.missions','goal.budget_run','goal.aggressive'):
             if any(getattr(self,k) is None for k in ('confidential_kd','top_secret_kd','combat_score','strength_min','strength_max')): raise ValueError('请填写实力数据及队友实力范围')
             if self.strength_min > self.strength_max: raise ValueError('队友实力下限不能超过上限')
             if self.style is None or self.partner_style is None: raise ValueError('请填写双方打法风格')
-            if self.goal == '33任务' and self.task is None: raise ValueError('请选择任务类型')
-            if self.goal != '跑刀' and (self.armor is None or self.ammo is None): raise ValueError('请选择护甲和子弹等级')
-            if self.goal == '跑刀': self.armor = self.ammo = None
-            if self.goal != '33任务': self.task = None
-        if self.goal not in ('33任务','跑刀','猛攻') and self.budget_min>self.budget_max: raise ValueError('预算下限不能超过上限')
+            if self.goal == 'goal.missions' and self.task is None: raise ValueError('请选择任务类型')
+            if self.goal != 'goal.budget_run' and (self.armor is None or self.ammo is None): raise ValueError('请选择护甲和子弹等级')
+            if self.goal == 'goal.budget_run': self.armor = self.ammo = None
+            if self.goal != 'goal.missions': self.task = None
+        if self.goal not in ('goal.missions','goal.budget_run','goal.aggressive') and self.budget_min>self.budget_max: raise ValueError('预算下限不能超过上限')
         self.nickname=self.nickname.strip(); self.game_id=self.game_id.strip()
         if not self.nickname: raise ValueError('昵称不能为空')
         return self

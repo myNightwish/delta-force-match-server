@@ -27,23 +27,23 @@ class Simulation:
         return db.execute('SELECT * FROM pilot_sim_runs WHERE actor=? OR controller=? ORDER BY rowid DESC LIMIT 1',(owner,owner)).fetchone()
     @staticmethod
     def normalize(profile):
-        if len(json.dumps(profile,ensure_ascii=False).encode())>16384:raise ValueError('条件内容过大')
+        if len(json.dumps(profile,ensure_ascii=False).encode())>16384:raise ValueError('ui.listing_data_is_too_large')
         p=copy.deepcopy(profile)
         for key in ('manual_score','confidential_kd','top_secret_kd','combat_score','strength_min','strength_max'):
             if p.get(key)=='':p[key]=None
         try:return RecruitmentV4.model_validate(p).model_dump()
-        except ValidationError as e:raise ValueError('当前条件未填写完整：'+str(e.errors()[0]['msg']))
+        except ValidationError as e:raise ValueError('testing.invalidProfile') from e
     @staticmethod
     def peers(profile):
         me=RecruitmentV4.model_validate(profile).profile();base=copy.deepcopy(profile)
         score=min(1e9,max(me['strength_min'],min(me['strength_score'],me['strength_max'])))
         base.update(score_mode='auto',manual_score=None,confidential_kd=1000,top_secret_kd=1000,combat_score=score/1000,strength_range_mode='custom',strength_min=me['strength_score'],strength_max=me['strength_score'],style=max(me['partner_style_min'],min(me['style'],me['partner_style_max'])),partner_style_min=me['style'],partner_style_max=me['style'],public=True)
         for k in ('helmet','armor','ammo'):
-            if me['goal']!='卡战备跑刀':base['partner_'+k+'_min']=me[k]
+            if me['goal']!='goal.budget_run':base['partner_'+k+'_min']=me[k]
         plans=[]
         def add(label,expected,**changes):
-            p={**copy.deepcopy(base),**changes,'nickname':'【测试】'+label}
-            if p['goal']!='卡战备跑刀':
+            p={**copy.deepcopy(base),**changes,'nickname':'[TEST]'+label.rsplit('.',1)[-1][:18]}
+            if p['goal']!='goal.budget_run':
                 for k in ('helmet','armor','ammo'):
                     if p.get(k) is None:p[k]=4
                     if p.get('partner_'+k+'_min') is None:p['partner_'+k+'_min']=1
@@ -51,42 +51,42 @@ class Simulation:
                 p.update(score_mode='auto',manual_score=None,confidential_kd=1000,top_secret_kd=1000,combat_score=changes['manual_score']/1000)
             p=RecruitmentV4.model_validate(p).model_dump()
             plans.append((label,expected,p))
-        add('兼容队友一',True);add('兼容队友二',True)
-        add('目标不同',False,goal='猛攻' if me['goal']!='猛攻' else '搜打撤',tasks=[])
+        add('simulation.compatibleOne',True);add('simulation.compatibleTwo',True)
+        add('ui.different_goals',False,goal='goal.aggressive' if me['goal']!='goal.aggressive' else 'goal.loot_extract',tasks=[])
         pair=next({'map':m,'difficulty':d} for m,ds in MAP_MODES.items() for d in ds if {'map':m,'difficulty':d} not in me['maps'])
-        add('战场不同',False,maps=[pair])
+        add('simulation.mapMismatch',False,maps=[pair])
         # If my range accepts every possible score, make the peer reject my score instead
-        if me['strength_max']<1e9:add('实力不符',False,manual_score=min(1e9,me['strength_max']+1))
-        elif me['strength_min']>0:add('实力不符',False,manual_score=max(0,me['strength_min']-1))
+        if me['strength_max']<1e9:add('simulation.skillMismatch',False,manual_score=min(1e9,me['strength_max']+1))
+        elif me['strength_min']>0:add('simulation.skillMismatch',False,manual_score=max(0,me['strength_min']-1))
         else:
-            other=0 if me['strength_score'] else 1;add('实力不符',False,strength_min=other,strength_max=other)
+            other=0 if me['strength_score'] else 1;add('simulation.skillMismatch',False,strength_min=other,strength_max=other)
         style=1 if me['style']!=1 else 5
-        add('反向打法不符',False,partner_style_min=style,partner_style_max=style)
+        add('simulation.reverseStyleMismatch',False,partner_style_min=style,partner_style_max=style)
         gear_changes=None
-        if me['goal']!='卡战备跑刀':
+        if me['goal']!='goal.budget_run':
             for k in ('helmet','armor','ammo'):
                 if me['partner_'+k+'_min']>1:
                     value=me['partner_'+k+'_min']-1;gear_changes={k:value,'partner_'+k+'_min':value};break
                 if me[k]<6:
                     gear_changes={k:6,'partner_'+k+'_min':me[k]+1};break
-        if gear_changes:add('装备不符',False,**gear_changes)
-        else:add('语音方式不同',False,voice='听指挥与标记' if me['voice']=='开麦' else '开麦')
-        add('区服不同',False,region='EU' if me['region']!='EU' else 'NA')
+        if gear_changes:add('simulation.gearMismatch',False,**gear_changes)
+        else:add('simulation.voiceMismatch',False,voice='voice.listen' if me['voice']=='voice.mic' else 'voice.mic')
+        add('simulation.regionMismatch',False,region='EU' if me['region']!='EU' else 'NA')
         # Refuse a broken generated fixture instead of showing a misleading expectation
         for label,expected,p in plans:
-            if assessment(me,RecruitmentV4.model_validate(p).profile())['eligible']!=expected:raise ValueError('无法根据当前条件构建场景：'+label)
+            if assessment(me,RecruitmentV4.model_validate(p).profile())['eligible']!=expected:raise ValueError('testing.invalidScenario')
         return plans
     def start(self,owner,access,profile=None,behavior='accept'):
-        if behavior not in BEHAVIORS:raise ValueError('请选择模拟队友响应方式')
+        if behavior not in BEHAVIORS:raise ValueError('ui.select_a_simulated_teammate_response')
         with self.pilot.db() as db:
             self.schema(db);self.tools.authorize(db,owner,access)
             old=self._run(db,owner)
             controller=old['controller'] if old and old['actor']==owner else owner
             active=self.pilot._latest(db,owner)
             is_test=db.execute('SELECT 1 FROM pilot_test_people WHERE owner=?',(owner,)).fetchone()
-            if active and active['status'] in ('waiting','matched') and not is_test:raise PhoneError(409,'请先结束真实招募，再开始模拟测试')
+            if active and active['status'] in ('waiting','matched') and not is_test:raise PhoneError(409,'ui.end_your_real_listing_before_starting_a_simulated_test')
             count=db.execute("SELECT count(*) FROM pilot_sim_runs WHERE status='active' AND expires>?",(time.time(),)).fetchone()[0]
-            if count>=5 and (not old or old['status']!='active'):raise PhoneError(429,'当前测试轮次较多，请稍后重试')
+            if count>=5 and (not old or old['status']!='active'):raise PhoneError(429,'ui.too_many_test_sessions_are_active_try_again_later')
         if profile is None:profile=self.tools.scenarios(owner,access)['scenarios'][0]['players'][0]
         clean=self.normalize(profile);plans=self.peers(clean)
         if old and old['status']=='active':self._stop(old['id'])
@@ -94,7 +94,7 @@ class Simulation:
         clean['nickname']='【测试】我';clean.pop('game_id',None)
         with self.pilot.db() as db:
             self.schema(db)
-            if db.execute("SELECT count(*) FROM pilot_sim_runs WHERE status='active' AND expires>?",(time.time(),)).fetchone()[0]>=5:raise PhoneError(429,'当前测试轮次较多，请稍后重试')
+            if db.execute("SELECT count(*) FROM pilot_sim_runs WHERE status='active' AND expires>?",(time.time(),)).fetchone()[0]>=5:raise PhoneError(429,'ui.too_many_test_sessions_are_active_try_again_later')
             db.execute("INSERT INTO pilot_sim_runs VALUES(?,?,?,'active',?,?,?)",(run_id,controller,actor,behavior,time.time()+900,self.pilot.now()))
             db.execute('INSERT INTO pilot_test_people(owner,pool_id,is_bot) VALUES(?,?,0)',(actor,run_id))
             new_access=self.tools.grant(db,actor)
