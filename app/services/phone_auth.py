@@ -1,4 +1,5 @@
 """Optional Verify-backed login; anonymous matching continues independently."""
+from app.schemas.time_slots import TIME_SLOT_OPTIONS
 import hashlib
 import hmac
 import json
@@ -126,7 +127,7 @@ class PhoneAuth:
         return self.pilot.register()
 
 # Only personal defaults are synced. Recruiting goals and teammate requirements stay local.
-PROFILE_CHOICES={'region':['NA','EU','SEA','OCE','ME'],'platform':['PC','Console','Mobile'],'language':['中文','English','日本語'],'voice':['开麦','听指挥与标记'],'slot':['现在起一小时','今天晚间'],'score_mode':['auto','manual']}
+PROFILE_CHOICES={'region':['NA','EU','SEA','OCE','ME'],'platform':['PC','Console','Mobile'],'language':['中文','English','日本語'],'voice':['开麦','听指挥与标记'],'slot':TIME_SLOT_OPTIONS,'score_mode':['auto','manual']}
 PROFILE_BOUNDS={'helmet':(1,6),'armor':(1,6),'ammo':(1,6),'style':(1,5),'confidential_kd':(0,1000),'top_secret_kd':(0,1000),'combat_score':(0,1000000),'manual_score':(0,1000000000)}
 def clean_profile(profile):
     if not isinstance(profile,dict) or len(json.dumps(profile,ensure_ascii=False).encode())>8192:raise PhoneError(400,'个人资料格式不正确')

@@ -1,3 +1,4 @@
+from app.schemas.time_slots import TimeSlot
 from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
@@ -11,7 +12,7 @@ class Preferences(BaseModel):
     map: Literal['零号大坝','长弓溪谷','巴克什']
     difficulty: Literal['简单','普通']
     voice: Literal['开麦','听指挥与标记']
-    slot: Literal['现在起一小时','今天晚间']
+    slot: TimeSlot
     goal: Literal['33任务','跑刀','猛攻','任务','搜集撤离','主动交战']
     task: Literal['调查','放置','带出撤离任务','击杀干员','击杀特殊兵种','普通局内任务','标杆任务','命运契约'] | None = None
     armor: int | None = Field(default=None,ge=1,le=5)

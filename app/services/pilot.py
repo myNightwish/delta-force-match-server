@@ -11,6 +11,9 @@ from app.core.config import settings
 VERSION = 'two-person-recruitment-v4'
 PRESENCE_SECONDS = 75
 
+class RecruitmentConflictError(ValueError):
+    pass
+
 class InvalidIdentityError(ValueError):
     pass
 
@@ -149,6 +152,25 @@ class Pilot:
         pa,pb=people.get(a),people.get(b)
         return (pa['pool_id'] if pa else None)==(pb['pool_id'] if pb else None) and not (pa and pb and pa['is_bot'] and pb['is_bot'])
 
+    def _available_candidates(self, db, token, arm=None):
+        # Filter presence, isolated test pools and cooldowns in one query.
+        # Keep _reserve's independent checks inside the same write transaction.
+        query="""SELECT t.* FROM tickets t
+            JOIN participants p ON p.token=t.token
+            LEFT JOIN pilot_test_people peer ON peer.owner=t.token
+            LEFT JOIN pilot_test_people me ON me.owner=?
+            WHERE t.status='waiting' AND t.token<>? AND p.last_seen>?
+              AND peer.pool_id IS me.pool_id
+              AND NOT (COALESCE(peer.is_bot,0)<>0 AND COALESCE(me.is_bot,0)<>0)
+              AND NOT EXISTS (SELECT 1 FROM pilot_exclusions e
+                WHERE e.a=CASE WHEN ?<t.token THEN ? ELSE t.token END
+                  AND e.b=CASE WHEN ?<t.token THEN t.token ELSE ? END
+                  AND e.until_at>?)"""
+        params=[token,token,self.presence_cutoff(),token,token,token,token,self.now()]
+        if arm is not None:
+            query+=' AND t.arm=?';params.append(arm)
+        return db.execute(query+' ORDER BY t.created,t.id',params).fetchall()
+
     def _latest(self, db, token):
         return db.execute('SELECT * FROM tickets WHERE token=? ORDER BY id DESC LIMIT 1', (token,)).fetchone()
 
@@ -223,20 +245,15 @@ class Pilot:
         profile = json.loads(ticket['profile'])
         if profile.get('discovery', 'auto') != 'auto':
             return
-        if self.config()['experiment_enabled']:
-            candidates = db.execute("SELECT * FROM tickets WHERE arm=? AND status='waiting' AND token<>? ORDER BY created,id",
-                                    (ticket['arm'], ticket['token'])).fetchall()
-        else:
-            candidates = db.execute("SELECT * FROM tickets WHERE status='waiting' AND token<>? ORDER BY created,id",
-                                    (ticket['token'],)).fetchall()
-        candidates = [c for c in candidates if json.loads(c['profile']).get('discovery', 'auto') == 'auto'
-                      and self.same_pool(db,ticket['token'],c['token'])
-                      and self.online(db, c['token'])
-                      and not self._blocked(db, ticket['token'], c['token'])
-                      and not compatible(profile, json.loads(c['profile']), ticket['arm'] if self.config()['experiment_enabled'] else 'B')]
-        candidates.sort(key=lambda c: (abs(profile.get('strength_score',profile['rank']) - json.loads(c['profile']).get('strength_score',json.loads(c['profile'])['rank'])), c['created'], c['id']))
+        experiment=self.config()['experiment_enabled']
+        candidates=[]
+        for row in self._available_candidates(db,ticket['token'],ticket['arm'] if experiment else None):
+            other=json.loads(row['profile'])
+            if other.get('discovery','auto')=='auto' and not compatible(profile,other,ticket['arm'] if experiment else 'B'):
+                candidates.append((row,other))
         if candidates:
-            self._reserve(db, ticket, candidates[0], 'auto')
+            best=min(candidates,key=lambda pair:(abs(profile.get('strength_score',profile['rank'])-pair[1].get('strength_score',pair[1]['rank'])),pair[0]['created'],pair[0]['id']))
+            self._reserve(db,ticket,best[0],'auto')
 
     def _state(self, db, token, auto=True):
         self._expire(db)
@@ -283,7 +300,7 @@ class Pilot:
         with self.db() as db:
             return self._state(db, token)
 
-    def join(self, token, profile):
+    def _validated_profile(self, profile):
         if profile.get('schema_version') == 4:
             from app.schemas.recruitment_v4 import RecruitmentV4
             demo_metadata = {k:profile[k] for k in ('is_demo','demo_key') if k in profile}
@@ -293,7 +310,10 @@ class Pilot:
             demo_metadata = {k: profile[k] for k in ('is_demo','demo_key') if k in profile}
             profile = {**Preferences.model_validate(profile).model_dump(), **demo_metadata}
             profile['strength_score'] = round((profile['confidential_kd'] * .4 + profile['top_secret_kd'] * .6) * profile['combat_score'], 2)
-        profile = {**profile, 'rules_version': VERSION, 'matching_mode': 'experiment' if self.config()['experiment_enabled'] else 'shared'}
+        return {**profile, 'rules_version': VERSION, 'matching_mode': 'experiment' if self.config()['experiment_enabled'] else 'shared'}
+
+    def join(self, token, profile):
+        profile=self._validated_profile(profile)
         with self.db() as db:
             p = self.participant(db, token, touch=True)
             if db.execute('SELECT 1 FROM pilot_test_people WHERE owner=?',(token,)).fetchone():
@@ -307,17 +327,41 @@ class Pilot:
             self._event(db, cur.lastrowid, None, 'joined', profile.get('discovery', 'auto'))
             return self._state(db, token)
 
+    def replace(self, token, expected_ticket_id, profile):
+        # Validate first; all old/new ticket changes and auto reservation commit together.
+        profile=self._validated_profile(profile)
+        with self.db() as db:
+            participant=self.participant(db,token,touch=True)
+            self._expire(db)
+            current=self._latest(db,token)
+            if not current or current['id']!=expected_ticket_id:
+                raise RecruitmentConflictError('招募已变化，请查看当前招募后重新选择')
+            if current['status']=='matched':
+                raise RecruitmentConflictError('已匹配到队友，请先处理现有队伍')
+            if current['status']!='waiting':
+                raise RecruitmentConflictError('原招募已结束，请返回后重新发布')
+            if db.execute("SELECT 1 FROM tickets WHERE token=? AND id<>? AND status IN ('waiting','matched')",(token,current['id'])).fetchone():
+                raise RecruitmentConflictError('存在其他进行中的招募，请先查看当前招募')
+            if db.execute('SELECT 1 FROM pilot_test_people WHERE owner=?',(token,)).fetchone():
+                profile['is_demo']=True
+                profile['nickname']='【测试】'+profile['nickname'].removeprefix('【测试】')[:20]
+            db.execute("UPDATE tickets SET status='replaced' WHERE id=?",(current['id'],))
+            self._event(db,current['id'],None,'replaced')
+            cur=db.execute("INSERT INTO tickets(token,arm,profile,status,created) VALUES(?,?,?,'waiting',?)",(token,participant['arm'],json.dumps(profile,ensure_ascii=False),self.now()))
+            self._event(db,cur.lastrowid,None,'joined',profile.get('discovery','auto'))
+            return self._state(db,token)
+
     def candidates(self, token, recommended=True, page=0, query=""):
         with self.db() as db:
             self.participant(db, token, touch=True)
             self._expire(db)
             mine = self._latest(db, token)
             profile = json.loads(mine['profile']) if mine else None
-            rows = db.execute("SELECT * FROM tickets WHERE status='waiting' AND token<>? ORDER BY created,id", (token,)).fetchall()
+            rows = self._available_candidates(db,token)
             result = []
             for row in rows:
                 other = json.loads(row['profile'])
-                if not self.same_pool(db,token,row['token']) or not other.get('public', False) or not self.online(db, row['token']) or self._blocked(db, token, row['token']):
+                if not other.get('public', False):
                     continue
                 if query.strip() and query.strip().casefold() not in other.get('nickname','').casefold():
                     continue

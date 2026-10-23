@@ -1,3 +1,5 @@
+from app.schemas.time_slots import TimeSlot
+from app.services.strength_range import tolerance_bounds
 from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 from app.services.recruitment_rules import MAP_MODES, TASKS
@@ -18,7 +20,8 @@ class StrengthInputs(BaseModel):
 
     def result(self):
         score=round((self.confidential_kd*.4+self.top_secret_kd*.6)*self.combat_score,2)
-        return {'strength_score':score,'strength_min':round(score*.7,2),'strength_max':round(score*1.3,2)}
+        lo,hi=tolerance_bounds(score)
+        return {'strength_score':score,'strength_min':lo,'strength_max':hi}
 
 class RecruitmentV4(BaseModel):
     schema_version: Literal[4]
@@ -28,7 +31,7 @@ class RecruitmentV4(BaseModel):
     platform: Literal['PC','Console','Mobile']
     language: Literal['中文','English','日本語']
     voice: Literal['开麦','听指挥与标记']
-    slot: Literal['现在起一小时','今天晚间']
+    slot: TimeSlot
     goal: Literal['33任务','卡战备跑刀','搜打撤','猛攻']
     tasks: list[str]=Field(default_factory=list,max_length=8)
     maps: list[MapChoice]=Field(min_length=1,max_length=6)
@@ -46,9 +49,10 @@ class RecruitmentV4(BaseModel):
     confidential_kd: float|None=Field(default=None,ge=0,le=1000,allow_inf_nan=False)
     top_secret_kd: float|None=Field(default=None,ge=0,le=1000,allow_inf_nan=False)
     combat_score: float|None=Field(default=None,ge=0,le=1000000,allow_inf_nan=False)
-    strength_range_mode: Literal['auto','custom']='auto'
+    strength_range_mode: Literal['auto','custom','percent']='auto'
+    strength_tolerance_percent: int=Field(default=30,ge=0,le=100,strict=True)
     strength_min: float|None=Field(default=None,ge=0,le=1000000000,allow_inf_nan=False)
-    strength_max: float|None=Field(default=None,ge=0,le=1300000000,allow_inf_nan=False)
+    strength_max: float|None=Field(default=None,ge=0,le=2000000000,allow_inf_nan=False)
     discovery: Literal['browse','auto']='browse'
     public: bool=True
 
@@ -76,7 +80,9 @@ class RecruitmentV4(BaseModel):
     def profile(self):
         p=self.model_dump()
         p.update(StrengthInputs(confidential_kd=self.confidential_kd,top_secret_kd=self.top_secret_kd,combat_score=self.combat_score).result())
-        if self.strength_range_mode=='custom':
+        if self.strength_range_mode=='percent':
+            p['strength_min'],p['strength_max']=tolerance_bounds(p['strength_score'],self.strength_tolerance_percent)
+        elif self.strength_range_mode=='custom':
             p['strength_min']=self.strength_min
             p['strength_max']=self.strength_max
         # Compatibility fields let historical UI and reports continue reading old squads.

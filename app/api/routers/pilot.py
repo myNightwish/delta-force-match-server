@@ -2,7 +2,7 @@ import secrets
 from typing import Literal
 from fastapi import Request, APIRouter, Header, HTTPException, Query, UploadFile, File, Form, Response
 from pydantic import BaseModel, Field, model_validator
-from app.services.pilot import Pilot, InvalidIdentityError
+from app.services.pilot import Pilot, InvalidIdentityError, RecruitmentConflictError
 from app.services.pilot_chat import PilotChat, MAX_AUDIO_BYTES
 from app.core.config import settings
 from app.services.phone_auth import PhoneAuth, PhoneError
@@ -35,6 +35,7 @@ def token(authorization):
 def run(fn,*args):
     try: return fn(*args)
     except RateLimitError as e: raise HTTPException(429, {'code':'rate_limited','message':str(e)}, headers={'Retry-After':str(e.retry_after)})
+    except RecruitmentConflictError as e: raise HTTPException(409, {'code':'recruitment_changed','message':str(e)})
     except InvalidIdentityError as e: raise HTTPException(401, {'code':'anonymous_identity_invalid','message':str(e)})
     except PhoneError as e: raise HTTPException(e.status,str(e))
     except PermissionError as e: raise HTTPException(403,str(e))
@@ -67,6 +68,15 @@ def strength_preview(data:StrengthInputs,request:Request,authorization:str|None=
 def join(data: RecruitmentV4 | Preferences,request:Request,authorization: str|None=Header(default=None)):
     owner=token(authorization);guard(request,'join',owner)
     return run(service.join,owner,data.model_dump())
+
+class ReplaceRecruitmentIn(BaseModel):
+    expected_ticket_id: int=Field(gt=0)
+    profile: RecruitmentV4
+
+@router.post('/replace')
+def replace_recruitment(data:ReplaceRecruitmentIn,request:Request,authorization:str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'join',owner)
+    return run(service.replace,owner,data.expected_ticket_id,data.profile.model_dump())
 
 @router.post('/confirm')
 def confirm(data: SquadActionIn | None=None, authorization: str|None=Header(default=None)): return run(service.action,token(authorization),'confirm',None,data.squad_id if data else None)
