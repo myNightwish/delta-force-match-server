@@ -37,7 +37,7 @@ class Simulation:
     def peers(profile):
         me=RecruitmentV4.model_validate(profile).profile();base=copy.deepcopy(profile)
         score=min(1e9,max(me['strength_min'],min(me['strength_score'],me['strength_max'])))
-        base.update(score_mode='manual',manual_score=score,strength_range_mode='custom',strength_min=me['strength_score'],strength_max=me['strength_score'],style=max(me['partner_style_min'],min(me['style'],me['partner_style_max'])),partner_style_min=me['style'],partner_style_max=me['style'],public=True)
+        base.update(score_mode='auto',manual_score=None,confidential_kd=1000,top_secret_kd=1000,combat_score=score/1000,strength_range_mode='custom',strength_min=me['strength_score'],strength_max=me['strength_score'],style=max(me['partner_style_min'],min(me['style'],me['partner_style_max'])),partner_style_min=me['style'],partner_style_max=me['style'],public=True)
         for k in ('helmet','armor','ammo'):
             if me['goal']!='卡战备跑刀':base['partner_'+k+'_min']=me[k]
         plans=[]
@@ -47,6 +47,8 @@ class Simulation:
                 for k in ('helmet','armor','ammo'):
                     if p.get(k) is None:p[k]=4
                     if p.get('partner_'+k+'_min') is None:p['partner_'+k+'_min']=1
+            if 'manual_score' in changes:
+                p.update(score_mode='auto',manual_score=None,confidential_kd=1000,top_secret_kd=1000,combat_score=changes['manual_score']/1000)
             p=RecruitmentV4.model_validate(p).model_dump()
             plans.append((label,expected,p))
         add('兼容队友一',True);add('兼容队友二',True)

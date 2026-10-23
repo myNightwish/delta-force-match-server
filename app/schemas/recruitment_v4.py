@@ -11,6 +11,15 @@ class MapChoice(BaseModel):
             raise ValueError('请选择该地图支持的难度')
         return self
 
+class StrengthInputs(BaseModel):
+    confidential_kd: float=Field(ge=0,le=1000,allow_inf_nan=False)
+    top_secret_kd: float=Field(ge=0,le=1000,allow_inf_nan=False)
+    combat_score: float=Field(ge=0,le=1000000,allow_inf_nan=False)
+
+    def result(self):
+        score=round((self.confidential_kd*.4+self.top_secret_kd*.6)*self.combat_score,2)
+        return {'strength_score':score,'strength_min':round(score*.7,2),'strength_max':round(score*1.3,2)}
+
 class RecruitmentV4(BaseModel):
     schema_version: Literal[4]
     nickname: str=Field(min_length=1,max_length=24)
@@ -32,8 +41,8 @@ class RecruitmentV4(BaseModel):
     partner_helmet_min: int|None=Field(default=None,ge=1,le=6)
     partner_armor_min: int|None=Field(default=None,ge=1,le=6)
     partner_ammo_min: int|None=Field(default=None,ge=1,le=6)
-    score_mode: Literal['auto','manual']='auto'
-    manual_score: float|None=Field(default=None,ge=0,le=1000000000,allow_inf_nan=False)
+    score_mode: Literal['auto']='auto'
+    manual_score: Literal[None]=None
     confidential_kd: float|None=Field(default=None,ge=0,le=1000,allow_inf_nan=False)
     top_secret_kd: float|None=Field(default=None,ge=0,le=1000,allow_inf_nan=False)
     combat_score: float|None=Field(default=None,ge=0,le=1000000,allow_inf_nan=False)
@@ -61,17 +70,15 @@ class RecruitmentV4(BaseModel):
                 raise ValueError('请填写自身装备与队友装备门槛')
             elif getattr(self,requirement)>getattr(self,k):raise ValueError('队友装备门槛不能高于自己的对应装备')
         if self.score_mode=='auto' and any(getattr(self,k) is None for k in ('confidential_kd','top_secret_kd','combat_score')):raise ValueError('请填写 KD 和战斗分')
-        if self.score_mode=='manual' and self.manual_score is None:raise ValueError('请填写实力分')
         if self.strength_range_mode=='custom' and (self.strength_min is None or self.strength_max is None or self.strength_min>self.strength_max):raise ValueError('请填写有效的队友实力范围')
         return self
 
     def profile(self):
         p=self.model_dump()
-        score=self.manual_score if self.score_mode=='manual' else (self.confidential_kd*.4+self.top_secret_kd*.6)*self.combat_score
-        p['strength_score']=round(score,2)
-        if self.strength_range_mode=='auto':
-            p['strength_min']=round(p['strength_score']*.7,2)
-            p['strength_max']=round(p['strength_score']*1.3,2)
+        p.update(StrengthInputs(confidential_kd=self.confidential_kd,top_secret_kd=self.top_secret_kd,combat_score=self.combat_score).result())
+        if self.strength_range_mode=='custom':
+            p['strength_min']=self.strength_min
+            p['strength_max']=self.strength_max
         # Compatibility fields let historical UI and reports continue reading old squads.
         p.update(map=self.maps[0].map,difficulty=self.maps[0].difficulty,task=self.tasks[0] if self.tasks else None,
                  budget_min=0,budget_max=1000,rank=4,skill=3,gap=1)

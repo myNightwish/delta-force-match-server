@@ -29,13 +29,16 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "custom",
         "discovery": "browse",
         "public": true,
         "strength_min": 90,
-        "strength_max": 130
+        "strength_max": 130,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       },
       {
         "schema_version": 4,
@@ -62,13 +65,16 @@
         "partner_helmet_min": 3,
         "partner_armor_min": 3,
         "partner_ammo_min": 3,
-        "score_mode": "manual",
-        "manual_score": 115,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "custom",
         "discovery": "browse",
         "public": true,
         "strength_min": 90,
-        "strength_max": 120
+        "strength_max": 120,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.115
       }
     ]
   },
@@ -102,11 +108,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       },
       {
         "schema_version": 4,
@@ -133,11 +142,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 200,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.2
       }
     ]
   },
@@ -171,11 +183,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       },
       {
         "schema_version": 4,
@@ -202,11 +217,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       }
     ]
   },
@@ -240,11 +258,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       },
       {
         "schema_version": 4,
@@ -271,11 +292,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       }
     ]
   },
@@ -309,11 +333,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       },
       {
         "schema_version": 4,
@@ -340,11 +367,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       }
     ]
   },
@@ -385,11 +415,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       },
       {
         "schema_version": 4,
@@ -419,11 +452,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       }
     ]
   },
@@ -457,11 +493,14 @@
         "partner_helmet_min": 4,
         "partner_armor_min": 4,
         "partner_ammo_min": 4,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       },
       {
         "schema_version": 4,
@@ -488,11 +527,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       }
     ]
   },
@@ -526,11 +568,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       },
       {
         "schema_version": 4,
@@ -557,11 +602,14 @@
         "partner_helmet_min": null,
         "partner_armor_min": null,
         "partner_ammo_min": null,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "browse",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       }
     ]
   },
@@ -595,11 +643,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "auto",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       },
       {
         "schema_version": 4,
@@ -626,11 +677,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 110,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "auto",
-        "public": true
+        "public": true,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.11
       }
     ]
   },
@@ -664,11 +718,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "auto",
-        "public": false
+        "public": false,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       },
       {
         "schema_version": 4,
@@ -695,11 +752,14 @@
         "partner_helmet_min": 2,
         "partner_armor_min": 2,
         "partner_ammo_min": 2,
-        "score_mode": "manual",
-        "manual_score": 100,
+        "score_mode": "auto",
+        "manual_score": null,
         "strength_range_mode": "auto",
         "discovery": "auto",
-        "public": false
+        "public": false,
+        "confidential_kd": 1000,
+        "top_secret_kd": 1000,
+        "combat_score": 0.1
       }
     ]
   }

@@ -34,15 +34,15 @@ class V4Tests(unittest.TestCase):
  def test_auto_range_recomputed_not_trusted(self):
   _,s=self.join(strength_min=999,strength_max=999,strength_score=999)
   p=s['ticket']['profile'];self.assertEqual((p['strength_score'],p['strength_min'],p['strength_max']),(100,70,130))
-  _,b=self.join(score_mode='manual',manual_score=70)
+  _,b=self.join(combat_score=35)
   self.assertFalse(assessment(p,b['ticket']['profile'])['eligible'])
-  _,c=self.join(score_mode='manual',manual_score=130)
+  _,c=self.join(combat_score=65)
   self.assertTrue(assessment(p,c['ticket']['profile'])['eligible'])
  def test_custom_range_and_zero(self):
   _,a=self.join(strength_range_mode='custom',strength_min=0,strength_max=200)
-  _,b=self.join(score_mode='manual',manual_score=50,strength_range_mode='custom',strength_min=90,strength_max=110)
+  _,b=self.join(combat_score=25,strength_range_mode='custom',strength_min=90,strength_max=110)
   self.assertTrue(assessment(a['ticket']['profile'],b['ticket']['profile'])['eligible'])
-  _,z=self.join(score_mode='manual',manual_score=0)
+  _,z=self.join(combat_score=0)
   self.assertEqual(z['ticket']['profile']['strength_min'],0)
   self.assertEqual(z['ticket']['profile']['strength_max'],0)
  def test_map_and_task_intersections_are_frozen_in_agreement(self):
@@ -76,12 +76,26 @@ class V4Tests(unittest.TestCase):
   cases=[dict(maps=[]),dict(maps=[dict(map='巴克什',difficulty='普通')]),dict(maps=PLAN['maps']*2),dict(goal='33任务',tasks=[]),dict(tasks=['invalid']),dict(helmet=7),dict(helmet=None),dict(partner_helmet_min=5),dict(partner_style_min=5,partner_style_max=2),dict(manual_score=-1,score_mode='manual'),dict(score_mode='manual',manual_score=float('inf')),dict(strength_range_mode='custom',strength_min=100,strength_max=90)]
   for patch in cases:
    with self.subTest(patch=patch),self.assertRaises(ValidationError):RecruitmentV4.model_validate({**copy.deepcopy(PLAN),**patch})
+ def test_manual_score_and_missing_metrics_rejected(self):
+  for patch in [dict(score_mode='manual',manual_score=100),dict(manual_score=100),dict(confidential_kd=None),dict(top_secret_kd=None),dict(combat_score=None)]:
+   with self.subTest(patch=patch),self.assertRaises(ValidationError):RecruitmentV4.model_validate({**PLAN,**patch})
+ def test_preview_requires_identity_and_valid_metrics(self):
+  previous=pilot.service;pilot.service=self.p
+  try:
+   c=TestClient(app);h={'Authorization':'Bearer '+self.p.register()['token']}
+   self.assertEqual(c.post('/api/pilot/strength-preview',json={'confidential_kd':2,'top_secret_kd':2,'combat_score':50}).status_code,401)
+   result=c.post('/api/pilot/strength-preview',headers=h,json={'confidential_kd':2,'top_secret_kd':2,'combat_score':50,'strength_score':999})
+   self.assertEqual(result.json(),{'strength_score':100,'strength_min':70,'strength_max':130})
+   for data in [{},{'confidential_kd':-1,'top_secret_kd':2,'combat_score':50}]:self.assertEqual(c.post('/api/pilot/strength-preview',headers=h,json=data).status_code,422)
+  finally:pilot.service=previous
  def test_http_schema_cannot_fall_back_to_legacy_validation(self):
   previous=pilot.service;pilot.service=self.p
   try:
    c=TestClient(app);t=c.post('/api/pilot/participants').json()['token'];h={'Authorization':'Bearer '+t}
    invalid={**PLAN,**{k:v for k,v in OLD.items() if k not in PLAN},'helmet':None}
    self.assertEqual(c.post('/api/pilot/join',headers=h,json=invalid).status_code,422)
+   self.assertEqual(c.post('/api/pilot/join',headers=h,json={**PLAN,'score_mode':'manual','manual_score':999}).status_code,422)
+   self.assertEqual(c.post('/api/pilot/join',headers=h,json={**PLAN,'confidential_kd':None,'strength_score':999}).status_code,422)
    response=c.post('/api/pilot/join',headers=h,json=PLAN)
    self.assertEqual(response.status_code,200,response.text);self.assertEqual(response.json()['ticket']['profile']['schema_version'],4)
   finally:pilot.service=previous

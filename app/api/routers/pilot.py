@@ -12,7 +12,7 @@ router=APIRouter(prefix='/pilot',tags=['matching-pilot'])
 service=Pilot()
 
 from app.schemas.pilot_preferences import Preferences
-from app.schemas.recruitment_v4 import RecruitmentV4
+from app.schemas.recruitment_v4 import RecruitmentV4, StrengthInputs
 
 class SquadActionIn(BaseModel):
     squad_id: int | None = Field(default=None, gt=0)
@@ -57,6 +57,11 @@ def register(request:Request):
 def state(request:Request,authorization: str|None=Header(default=None)):
     owner=token(authorization);guard(request,'read',owner)
     return run(service.state,owner)
+
+@router.post('/strength-preview')
+def strength_preview(data:StrengthInputs,request:Request,authorization:str|None=Header(default=None)):
+    owner=token(authorization);guard(request,'read',owner)
+    return data.result()
 
 @router.post('/join')
 def join(data: RecruitmentV4 | Preferences,request:Request,authorization: str|None=Header(default=None)):

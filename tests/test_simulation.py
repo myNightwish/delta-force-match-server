@@ -68,7 +68,7 @@ class SimulationTests(unittest.TestCase):
   r=self.start();new=self.sim.start(r['token'],r['access_token'])
   self.assertNotEqual(new['run']['id'],r['run']['id']);self.assertEqual(self.p.state(r['token'])['ticket']['status'],'cancelled');self.assertEqual(self.p.candidates(new['token'],False)['total'],8)
  def test_knife_all_styles_zero_and_full_range_generate_valid_fixtures(self):
-  for patch_data in [dict(goal='卡战备跑刀'),dict(partner_style_min=1,partner_style_max=5,helmet=6,armor=6,ammo=6,partner_helmet_min=1,partner_armor_min=1,partner_ammo_min=1),dict(score_mode='manual',manual_score=0,strength_range_mode='custom',strength_min=0,strength_max=1300000000)]:
+  for patch_data in [dict(goal='卡战备跑刀'),dict(partner_style_min=1,partner_style_max=5,helmet=6,armor=6,ammo=6,partner_helmet_min=1,partner_armor_min=1,partner_ammo_min=1),dict(combat_score=0,strength_range_mode='custom',strength_min=0,strength_max=1300000000)]:
    with self.subTest(patch=patch_data):
     plans=self.sim.peers(Simulation.normalize({**copy.deepcopy(PLAN),**patch_data}));self.assertEqual(len(plans),8);self.assertEqual(sum(p[1] for p in plans),2)
  def test_auto_mode_matches_self_to_bot_without_bot_bot_pairing(self):
